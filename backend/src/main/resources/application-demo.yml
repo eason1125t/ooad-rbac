@@ -1,0 +1,9 @@
+# 功能：仅本机演示配置；DemoAccountsInitializer读取demo/accounts.json，正式引导密码规则不变。
+server:
+  address: 127.0.0.1
+app:
+  bootstrap:
+    username: ''
+    password: ''
+  demo:
+    retire-bootstrap-username: ${DEMO_RETIRED_USERNAME:}

@@ -1,0 +1,16 @@
+{
+  "password": "1234",
+  "roles": [
+    {"code": "demo_platform_view", "name": "演示平台入口", "permissions": ["admin:console:view"]},
+    {"code": "demo_oa", "name": "演示OA访问", "permissions": ["oa:document:view"]},
+    {"code": "demo_pmis", "name": "演示PMIS访问", "permissions": ["pmis:project:view"]}
+  ],
+  "accounts": [
+    {"username": "super-admin", "label": "超级管理员", "roles": ["bootstrap_admin"]},
+    {"username": "oa-admin", "label": "OA管理员", "roles": ["demo_platform_view", "demo_oa"]},
+    {"username": "pmis-admin", "label": "PMIS管理员", "roles": ["demo_platform_view", "demo_pmis"]},
+    {"username": "oa-user-1", "label": "OA测试员工1", "roles": ["demo_oa"]},
+    {"username": "pmis-user-1", "label": "PMIS测试员工1", "roles": ["demo_pmis"]},
+    {"username": "employee-1", "label": "未授权测试员工1", "roles": []}
+  ]
+}

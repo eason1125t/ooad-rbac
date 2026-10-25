@@ -1,0 +1,6 @@
+# 功能：统一仓库文本换行，保证Windows开发与Linux CI使用同一源码内容。
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.png binary
+*.jpg binary
+*.xlsx binary

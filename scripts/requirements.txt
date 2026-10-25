@@ -1,0 +1,2 @@
+# 功能：只读Excel分析所需依赖，脚本见analyze_sources.py；不用于后端运行。
+openpyxl==3.1.5

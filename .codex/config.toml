@@ -1,0 +1,9 @@
+# 功能：本项目Apifox官方HTTP MCP配置；令牌从本机环境读取，契约仍以contracts/openapi.yaml为准。
+# 先运行scripts/configure-apifox-token.ps1，再重新打开Codex以载入新环境和服务。
+[mcp_servers.apifox]
+url = "https://api.apifox.com/mcp"
+bearer_token_env_var = "APIFOX_ACCESS_TOKEN"
+http_headers = { "X-Apifox-Api-Version" = "2025-09-01" }
+enabled = true
+required = false
+startup_timeout_sec = 30

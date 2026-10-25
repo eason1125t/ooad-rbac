@@ -1,0 +1,6 @@
+# 功能：生产Cookie约束；必须通过HTTPS站点运行，凭据始终由外部环境配置。
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true

@@ -1,0 +1,9 @@
+flowchart TD
+  S[security] --> I[identity]
+  S --> P[authorization 公开接口]
+  P --> M[authorization.internal]
+  B[bootstrap] --> I
+  B --> P
+  O[oa / pmis / admin] --> C[shared 响应契约]
+  S --> C
+  S -. 方法授权 .-> O

@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+allowBuilds:
+  esbuild: true
+  puppeteer: false
+saveExact: true
+strictPeerDependencies: true

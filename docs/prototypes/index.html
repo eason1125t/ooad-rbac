@@ -1,0 +1,18 @@
+<!doctype html>
+<!-- 功能：五工作区的离线流程索引；Vue是运行界面，本文只提供可编辑布局参考，不调用API或保存业务。 -->
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>市政协同权限平台 · 五工作区原型</title>
+<style>
+:root{font:15px 'Microsoft YaHei UI','PingFang SC',sans-serif;color:#243746;background:#f2f5f8}*{box-sizing:border-box}body{margin:0}header{background:#17324d;color:white;padding:24px 32px}h1{font-size:24px;margin:0}h2{font-size:19px}h3{font-size:16px}nav{display:flex;flex-wrap:wrap;gap:18px;padding:20px 32px;background:white;border-bottom:1px solid #d8e1e8}a{color:#087f8c}a:focus-visible,button:focus-visible{outline:3px solid #36b4c4}main{max-width:1180px;margin:24px auto;padding:0 24px}section{background:white;border:1px solid #d8e1e8;padding:24px;margin:20px 0;scroll-margin-top:20px}p,li{line-height:1.8}.notice{padding:14px;border-left:4px solid #087f8c;background:#e8f4f5}.split{display:grid;grid-template-columns:210px minmax(0,1fr);gap:24px}.tree{border-right:1px solid #d8e1e8;padding-right:20px}.tabs{color:#087f8c;border-bottom:1px solid #d8e1e8;padding-bottom:14px}button,input{font:inherit;padding:8px;border:1px solid #aebfcd;border-radius:4px}button:disabled{color:#627485;background:#edf1f5;cursor:not-allowed}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:12px;border-bottom:1px solid #d8e1e8}.table{overflow:auto}label{display:block;margin:12px 0}@media(max-width:650px){.split{display:block}.tree{border-right:0;border-bottom:1px solid #d8e1e8}header,nav{padding:18px}main{padding:0 14px}section{padding:18px}}
+</style></head>
+<body>
+<header><h1>市政协同权限平台</h1><p>五个工作区承接完整管理流程</p></header>
+<nav aria-label="工作区"><a href="#workbench">工作台</a><a href="#users">组织与用户</a><a href="#roles">角色与授权</a><a href="#applications">应用与资源</a><a href="#audit">操作审计</a></nav>
+<main>
+<p class="notice">离线流程原型，示例均为合成内容。当前运行界面在Vue中；组织、委派、管理写入及审计API仍未实现。</p>
+<section id="workbench"><h2>工作台</h2><p>常用任务：查找人员并分配应用角色、配置角色权限、设置应用管理员与范围、查询授权记录。</p><p>只展示真实可获取的状态；到期提醒和统计接口未完成时不填充虚构数字。</p></section>
+<section id="users"><h2>组织与用户</h2><div class="split"><aside class="tree">示例市政集团<p>工程分公司</p><p>　工程部</p><p>　综合管理部</p></aside><div><p class="tabs">人员与账号 / 组织设置 / 导入记录</p><div class="table"><table><tr><th>人员</th><th>账号</th><th>组织</th></tr><tr><td>合成员工1</td><td>oa-user-1</td><td>工程部</td></tr></table></div><h3>应用授权详情</h3><p>选择本应用角色，设置有效期，预览影响后确认。未建号人员须先走明确建号流程。</p><label>开始时间（含） <input type="datetime-local"></label><label>结束时间（不含） <input type="datetime-local"></label><button disabled>确认授权（未实现）</button><h3>导入校验</h3><p>解析映射 → 组织匹配 → 错误反馈 → 确认整批提交；负责人同名需人工唯一账号映射。</p></div></div></section>
+<section id="roles"><h2>角色与授权</h2><p class="tabs">基本信息 / 权限配置 / 角色成员</p><p>选择一个应用内角色，配置允许的资源动作，并在角色成员中分配人员和有效期。与用户详情共享同一授权流程。</p><p>示例：OA文档阅览者 → OA公文 / 查看。菜单层级不隐式授予子项权限。</p><button disabled>保存角色权限（未实现）</button></section>
+<section id="applications"><h2>应用与资源</h2><p class="tabs">基本信息 / 资源权限 / 管理员与范围</p><p>资源树与权限动作就近维护。示例管理员oa-admin的管理应用为OA，示例人员范围为工程分公司及下级；平台可以显式选择全公司。</p><p>拥有业务操作权限不自动拥有委派权，业务管理员不能通过修改角色扩大自身范围。</p><button disabled>保存委派范围（未实现）</button></section>
+<section id="audit"><h2>操作审计</h2><p>按应用、操作者、目标和时间查询；展示授权来源、前后差异及有效期。只读且遵守管理范围。</p><button disabled>查询真实审计（未实现）</button></section>
+</main></body></html>

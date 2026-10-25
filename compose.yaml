@@ -1,0 +1,30 @@
+# 功能：隔离的本地开发依赖；使用3307/6380避免覆盖现有MySQL，应用仍在宿主运行。
+name: ooad-rbac
+services:
+  mysql:
+    image: mysql:8.4.7
+    environment:
+      MYSQL_DATABASE: rbac
+      MYSQL_USER: rbac
+      MYSQL_PASSWORD: ${DB_PASSWORD:?请在.env设置DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在.env设置MYSQL_ROOT_PASSWORD}
+      TZ: UTC
+    command: ["--default-time-zone=+00:00"]
+    ports: ["127.0.0.1:3307:3306"]
+    volumes: ["mysql-data:/var/lib/mysql"]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
+      interval: 5s
+      retries: 30
+  redis:
+    image: redis:7.4.6-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["127.0.0.1:6380:6379"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+volumes:
+  mysql-data:
+  redis-data:

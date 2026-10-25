@@ -1,0 +1,19 @@
+# 原始人员资料和本地运行产物不得提交。
+*.xlsx
+references/source/*
+!references/source/README.md
+.env
+.env.*
+!.env.example
+**/target/
+**/node_modules/
+**/dist/
+**/__pycache__/
+*.py[cod]
+.venv/
+reports/
+.tools/
+*.log
+.idea/
+.vscode/
+**/.DS_Store

@@ -1,0 +1,36 @@
+# 功能：在Docker可用的CI执行完整骨架验证；不推送制品、不部署，避免跳过集成测试却误报绿灯。
+name: verify
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  skeleton:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.13.0'
+      - run: npm install --global pnpm@12.4.2
+      - run: docker info
+      - run: bash backend/mvnw -f backend/pom.xml verify
+      - run: pnpm -C frontend install --frozen-lockfile
+      - run: pnpm -C frontend run verify
+      - run: pnpm -C frontend run docs
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+      - run: pnpm -C frontend exec node scripts/ui-smoke.mjs
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verification-reports
+          path: |
+            backend/target/surefire-reports/
+            backend/target/site/jacoco/
+            reports/

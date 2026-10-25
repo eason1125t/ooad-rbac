@@ -1,0 +1,291 @@
+# 版本化接口唯一基线；frontend通过openapi-typescript生成模型，API测试验证本轮已暴露路径。
+openapi: 3.0.3
+info:
+  title: 市政统一权限 · 第一轮骨架 API
+  version: 0.1.0
+  description: 同站点Cookie Session。先GET csrf，所有不安全请求携带X-CSRF-TOKEN。原型不代表完整业务。
+servers:
+  - url: /
+security:
+  - sessionCookie: []
+tags:
+  - name: auth
+  - name: admin
+  - name: oa
+  - name: pmis
+  - name: health
+x-planned-operations:
+  - requirement: FR-04
+    resource: /api/v1/admin/organizations 与 /employees
+    status: DESIGNED_NOT_EXPOSED
+    permission: admin:organization:view
+    pagination: page从1；size默认20最大100；非法400；排序id/name白名单
+  - requirement: FR-05
+    resource: /api/v1/admin/roles/{id}/permissions 与 /members
+    status: DESIGNED_NOT_EXPOSED
+    concurrency: expectedVersion必需；冲突409；保存与同步状态分离
+  - requirement: FR-06
+    resource: /api/v1/admin/imports
+    status: DESIGNED_NOT_EXPOSED
+    lifecycle: 校验预览后确认整批提交；同名负责人不自动匹配
+  - requirement: FR-07
+    resource: /api/v1/oa/documents
+    status: DESIGNED_NOT_EXPOSED
+    dataScope: 本人列表在SQL过滤，写入结合权限、归属与状态
+  - requirement: FR-08
+    resource: /api/v1/pmis/projects
+    status: DESIGNED_NOT_EXPOSED
+    dataScope: 本人列表在SQL过滤，审批权限单独检查
+paths:
+  /api/v1/health:
+    get:
+      operationId: health
+      tags: [health]
+      summary: 存活状态，不代表依赖就绪
+      security: []
+      x-application: shared
+      x-requirements: [NFR-04]
+      x-access: public
+      x-csrf: false
+      responses:
+        '200':
+          description: 服务存活
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [status]
+                    properties:
+                      status: {type: string, enum: [UP]}
+              example: {data: {status: UP}}
+  /api/v1/auth/csrf:
+    get:
+      operationId: getCsrf
+      tags: [auth]
+      summary: 获取服务端CSRF令牌，登录和退出后重新获取
+      security: []
+      x-application: shared
+      x-requirements: [FR-01, FR-03]
+      x-access: public
+      x-csrf: false
+      responses:
+        '200':
+          description: CSRF令牌；响应不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/Csrf'}
+              example: {data: {token: opaque-example, headerName: X-CSRF-TOKEN}}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: 环境初始化账号登录
+      security: []
+      x-application: shared
+      x-requirements: [FR-01, FR-03, FR-09]
+      x-access: public-with-csrf
+      x-csrf: true
+      parameters:
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: {type: string, minLength: 1, maxLength: 64, example: oa-user-1}
+                password: {type: string, format: password, minLength: 1, maxLength: 72}
+      responses:
+        '200':
+          description: 登录成功并更新Session ID
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthenticatedResponse'}
+              example: {data: {authenticated: true}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: 撤销当前会话（幂等），保留CSRF校验
+      x-application: shared
+      x-requirements: [FR-01, FR-09]
+      x-access: session-logout
+      x-csrf: true
+      parameters:
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 当前会话已撤销
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AuthenticatedResponse'}
+              example: {data: {authenticated: false}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: 当前服务端主体及实时权限集合
+      x-application: shared
+      x-requirements: [FR-01, FR-02, FR-09]
+      x-access: authenticated
+      x-csrf: false
+      responses:
+        '200':
+          description: 当前身份
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data: {$ref: '#/components/schemas/Me'}
+              example: {data: {id: '1', username: oa-user-1, permissions: ['oa:document:view']}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/admin/demo:
+    get:
+      operationId: adminDemo
+      tags: [admin]
+      summary: 验证管理端统一权限入口
+      x-application: admin
+      x-requirements: [FR-02, FR-03]
+      x-access: permission
+      x-permission: admin:console:view
+      x-csrf: false
+      responses:
+        '200': {$ref: '#/components/responses/Demo'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/oa/demo:
+    get:
+      operationId: oaDemo
+      tags: [oa]
+      summary: 验证OA统一权限入口，不返回业务记录
+      x-application: oa
+      x-requirements: [FR-02, FR-03, FR-07]
+      x-access: permission
+      x-permission: oa:document:view
+      x-csrf: false
+      responses:
+        '200': {$ref: '#/components/responses/Demo'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/pmis/demo:
+    get:
+      operationId: pmisDemo
+      tags: [pmis]
+      summary: 验证工程项目统一权限入口，不返回业务记录
+      x-application: pmis
+      x-requirements: [FR-02, FR-03, FR-08]
+      x-access: permission
+      x-permission: pmis:project:view
+      x-csrf: false
+      responses:
+        '200': {$ref: '#/components/responses/Demo'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+components:
+  securitySchemes:
+    sessionCookie: {type: apiKey, in: cookie, name: SESSION}
+  parameters:
+    CsrfHeader:
+      name: X-CSRF-TOKEN
+      in: header
+      required: true
+      schema: {type: string}
+      description: 同一Cookie会话通过GET csrf取得的token
+  schemas:
+    Csrf:
+      type: object
+      required: [token, headerName]
+      properties:
+        token: {type: string}
+        headerName: {type: string, enum: [X-CSRF-TOKEN]}
+    Me:
+      type: object
+      required: [id, username, permissions]
+      properties:
+        id: {type: string, pattern: '^[0-9]+$'}
+        username: {type: string}
+        permissions:
+          type: array
+          uniqueItems: true
+          items: {type: string}
+    AuthenticatedResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [authenticated]
+          properties:
+            authenticated: {type: boolean}
+    DemoResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [application, status, message]
+          properties:
+            application: {type: string, enum: [admin, oa, pmis]}
+            status: {type: string, enum: [SKELETON]}
+            message: {type: string}
+    Error:
+      type: object
+      required: [code, message, traceId]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        traceId: {type: string}
+        details: {type: object, additionalProperties: true}
+      example: {code: FORBIDDEN, message: 无访问权限, traceId: example-trace}
+    PageMetadata:
+      description: 未来列表接口共享规范，本轮未暴露列表
+      type: object
+      required: [page, size, total]
+      properties:
+        page: {type: integer, minimum: 1, default: 1}
+        size: {type: integer, minimum: 1, maximum: 100, default: 20}
+        total: {type: integer, minimum: 0}
+  responses:
+    Demo:
+      description: 已通过真实权限检查；业务仍为骨架
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/DemoResponse'}
+          example: {data: {application: oa, status: SKELETON, message: 授权链路已接通，公文业务尚未实现}}
+    Unauthorized:
+      description: 身份无效或过期/登录凭据错误
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Forbidden:
+      description: 身份有效但权限不足，或CSRF缺失/错误
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Unavailable:
+      description: 数据库/Redis等必要设施不可可靠读取，拒绝执行
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}

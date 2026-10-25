@@ -1,0 +1,53 @@
+# 功能：共用运行配置；本地Compose和CI通过环境变量连接真实MySQL/Redis，生产覆盖Cookie策略。
+spring:
+  application:
+    name: municipal-rbac
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3307/rbac?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
+    username: ${DB_USERNAME:rbac}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 3000
+      connection-init-sql: "SET time_zone = '+00:00'"
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6380}
+      password: ${REDIS_PASSWORD:}
+      connect-timeout: 2s
+      timeout: 2s
+  session:
+    store-type: redis
+    timeout: ${SESSION_IDLE_TIMEOUT:30m}
+    redis:
+      namespace: municipal:session
+  jackson:
+    time-zone: UTC
+  flyway:
+    enabled: true
+    validate-on-migrate: true
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    session:
+      cookie:
+        name: SESSION
+        http-only: true
+        same-site: lax
+        secure: false
+  error:
+    include-message: never
+    include-stacktrace: never
+app:
+  session:
+    absolute-timeout: ${SESSION_ABSOLUTE_TIMEOUT:2h}
+  bootstrap:
+    username: ${BOOTSTRAP_ADMIN_USERNAME:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+logging:
+  pattern:
+    level: '%5p [traceId=%X{traceId:-}]'

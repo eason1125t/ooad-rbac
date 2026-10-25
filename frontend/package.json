@@ -1,0 +1,34 @@
+{
+  "name": "municipal-workbench",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.4.2",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter admin dev",
+    "dev:all": "pnpm -r --parallel --filter admin --filter oa --filter pmis --fail-if-no-match run dev",
+    "contract": "node scripts/check-contract.mjs && openapi-typescript ../contracts/openapi.yaml -o packages/api/src/schema.generated.ts",
+    "typecheck": "pnpm -r --filter admin --filter oa --filter pmis --fail-if-no-match run typecheck",
+    "build": "pnpm -r --filter admin --filter oa --filter pmis --fail-if-no-match run build",
+    "format": "prettier --write apps packages scripts package.json tsconfig.json",
+    "format:check": "prettier --check apps packages scripts package.json tsconfig.json",
+    "verify": "pnpm contract && pnpm typecheck && pnpm build && pnpm format:check",
+    "docs": "node scripts/render-docs.mjs"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "12.1.0",
+    "@asciidoctor/core": "3.0.4",
+    "@mermaid-js/mermaid-cli": "11.12.0",
+    "@tailwindcss/vite": "4.1.16",
+    "@types/node": "24.9.1",
+    "@vitejs/plugin-vue": "6.0.1",
+    "openapi-typescript": "7.10.1",
+    "prettier": "3.6.2",
+    "tailwindcss": "4.1.16",
+    "typescript": "5.9.3",
+    "vite": "7.1.12",
+    "vue-tsc": "3.1.1"
+  }
+}

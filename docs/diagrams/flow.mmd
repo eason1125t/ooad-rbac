@@ -1,0 +1,9 @@
+flowchart LR
+  U[企业人员] --> A[admin / oa / pmis]
+  A -->|Cookie 与 CSRF| S[认证与会话约束]
+  S <-->|身份状态| D[(MySQL)]
+  S <-->|Session| R[(Redis)]
+  S --> P[统一操作授权]
+  P -->|当前有效角色与权限| D
+  P --> B[业务演示入口]
+  X[三个原始 Excel] --> V[只读分析及导入预览设计]
