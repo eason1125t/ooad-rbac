@@ -171,6 +171,11 @@ async function closed() {
   await page.waitForFunction(() => !document.querySelector("dialog[open]"));
   await page.waitForNetworkIdle();
 }
+async function closeDialog() {
+  // 保存结果会改变模态高度；等待按钮可用且位置稳定后再点击，避免CI误点旧坐标。
+  await page.locator('dialog[open] button[aria-label="关闭表单"]').click();
+  await closed();
+}
 async function shot(name) {
   await page.screenshot({
     path: path.join(out, `${name}.png`),
@@ -407,8 +412,7 @@ try {
     (e) => e.value,
   );
   assert.ok(temporary.length >= 4);
-  await page.click('dialog[open] button[aria-label="关闭表单"]');
-  await closed();
+  await closeDialog();
   const account = await read(`/admin/employees/${employee.id}/account`);
   assert.equal(account.username, "ui-user-1");
   pass("人员新增/修改与关联账号真实建号");
@@ -525,8 +529,7 @@ try {
     await page.$eval('dialog[open] [role="alert"]', (e) => e.textContent),
     /重新加载/,
   );
-  await page.click('dialog[open] button[aria-label="关闭表单"]');
-  await closed();
+  await closeDialog();
   await click("重新加载详情");
   await page.waitForNetworkIdle();
   pass("409冲突可见并可重新加载");
@@ -556,8 +559,7 @@ try {
     await page.$eval("dialog[open]", (e) => e.textContent),
     /oa:document:view/,
   );
-  await page.click('dialog[open] button[aria-label="关闭表单"]');
-  await closed();
+  await closeDialog();
   pass("人员完整角色集合与有效权限详情联动");
   await navigate("applications");
   await click("管理员与范围");
@@ -600,8 +602,7 @@ try {
   await selectLabel("责任管理员", "oa-admin");
   await click("保存维护责任", "dialog[open]");
   await page.waitForNetworkIdle();
-  await page.click('dialog[open] button[aria-label="关闭表单"]');
-  await closed();
+  await closeDialog();
   const businessContext = await browser.createBrowserContext();
   const business = await businessContext.newPage();
   await business.setViewport({ width: 1440, height: 1000 });
@@ -621,8 +622,7 @@ try {
   await click("角色与权限");
   await page.waitForNetworkIdle();
   await shot("admin-business-grant-desktop");
-  await page.click('dialog[open] button[aria-label="关闭表单"]');
-  await closed();
+  await closeDialog();
   await navigate("roles");
   await click("新建角色");
   await fill("角色编码", "ui-oa-team");
@@ -698,8 +698,7 @@ try {
       )
     ).permissions.some((p) => p.code === permission.code && p.capabilities.all),
   );
-  await page.click('dialog[open] button[aria-label="关闭表单"]');
-  await closed();
+  await closeDialog();
   await businessContext.close();
   pass("界面撤回管理员本人权限后员工既有角色/访问不变（v2）");
   await click("人员档案");
