@@ -3,12 +3,16 @@ package com.municipal.rbac.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.municipal.rbac.identity.AccountMapper;
+import com.municipal.rbac.identity.IdentityData;
+import com.municipal.rbac.identity.PasswordHasher;
 import com.municipal.rbac.shared.ApiResponse;
+import com.municipal.rbac.shared.DomainFailure;
 import java.util.Map;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.*;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -18,6 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.*;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 @Configuration
@@ -48,9 +53,33 @@ public class SecurityConfig {
     }
 
     @Bean
+    PasswordHasher identityPasswords(PasswordEncoder encoder) {
+        return new PasswordHasher() {
+            public String encode(String password) {
+                return encoder.encode(password);
+            }
+
+            public boolean matches(String password, String hash) {
+                return encoder.matches(password, hash);
+            }
+        };
+    }
+
+    @Bean
+    LoginThrottle loginThrottle(StringRedisTemplate redis) {
+        return new LoginThrottle(redis);
+    }
+
+    @Bean
     UserDetailsService userDetails(AccountMapper accounts) {
         return username -> {
-            var account = accounts.byUsername(username);
+            String normalized;
+            try {
+                normalized = IdentityData.code(username);
+            } catch (DomainFailure failure) {
+                throw new UsernameNotFoundException("invalid credentials");
+            }
+            var account = accounts.byUsername(normalized);
             if (account == null) throw new UsernameNotFoundException("invalid credentials");
             return new IdentityPrincipal(account);
         };
@@ -80,6 +109,7 @@ public class SecurityConfig {
             AccountMapper accounts,
             SessionPolicy policy,
             JsonSecurityErrors errors,
+            LoginThrottle throttle,
             ObjectMapper json)
             throws Exception {
         http.csrf(csrf -> csrf.csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
@@ -113,6 +143,8 @@ public class SecurityConfig {
                                         .loginProcessingUrl("/api/v1/auth/login")
                                         .successHandler(
                                                 (req, res, authentication) -> {
+                                                    throttle.succeeded(
+                                                            req.getParameter("username"));
                                                     req.getSession()
                                                             .setAttribute(
                                                                     SessionPolicy.AUTHENTICATED_AT,
@@ -129,6 +161,9 @@ public class SecurityConfig {
                                                     boolean unavailable =
                                                             InfrastructureBoundaryFilter
                                                                     .infrastructure(failure);
+                                                    if (!unavailable)
+                                                        throttle.failed(
+                                                                req.getParameter("username"));
                                                     errors.write(
                                                             req,
                                                             res,
@@ -156,6 +191,9 @@ public class SecurityConfig {
                 .requestCache(cache -> cache.disable())
                 .sessionManagement(
                         session -> session.sessionFixation(fixation -> fixation.changeSessionId()))
+                .addFilterBefore(
+                        new LoginThrottleFilter(throttle, errors),
+                        UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(
                         new SessionValidityFilter(accounts, policy, errors),
                         AnonymousAuthenticationFilter.class);

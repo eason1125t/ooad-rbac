@@ -9,8 +9,14 @@ erDiagram
     BOOLEAN enabled
     BIGINT version
     DATETIME created_at
+    VARCHAR name_key
+    BIGINT parent_key
+    INT root_key
+    BIGINT manager_employee_id
+    DATETIME updated_at
   }
   id_organization |o--o{ id_organization : "parent_id"
+  id_employee |o--o{ id_organization : "manager_employee_id"
   id_employee {
     BIGINT id
     VARCHAR employee_code
@@ -20,6 +26,8 @@ erDiagram
     VARCHAR phone
     BOOLEAN enabled
     DATETIME created_at
+    BIGINT version
+    DATETIME updated_at
   }
   id_organization ||--o{ id_employee : "organization_id"
   id_user {
@@ -31,6 +39,9 @@ erDiagram
     BIGINT auth_version
     BIGINT grant_version
     DATETIME created_at
+    BIGINT version
+    BOOLEAN force_password_change
+    DATETIME updated_at
   }
   id_employee |o--o| id_user : "employee_id"
   auth_application {
@@ -46,13 +57,23 @@ erDiagram
     VARCHAR name
     BOOLEAN enabled
     BIGINT version
+    BIGINT application_id
+    VARCHAR kind
+    BIGINT owner_user_id
+    BOOLEAN personnel_all
+    VARCHAR name_key
+    BIGINT app_key
+    BIGINT owner_key
   }
+  auth_application |o--o{ auth_role : "application_id"
+  id_user |o--o{ auth_role : "owner_user_id"
   auth_permission {
     BIGINT id
     BIGINT application_id
     VARCHAR code
     VARCHAR name
     BOOLEAN enabled
+    VARCHAR implementation_status
   }
   auth_application ||--o{ auth_permission : "application_id"
   auth_user_role {
@@ -60,14 +81,150 @@ erDiagram
     BIGINT role_id
     DATETIME valid_from
     DATETIME valid_to
+    BIGINT granted_by
+    DATETIME granted_at
   }
   id_user ||--o{ auth_user_role : "user_id"
   auth_role ||--o{ auth_user_role : "role_id"
+  id_user |o--o{ auth_user_role : "granted_by"
   auth_role_permission {
     BIGINT role_id
     BIGINT permission_id
     DATETIME valid_from
     DATETIME valid_to
+    VARCHAR scope_kind
   }
   auth_role ||--o{ auth_role_permission : "role_id"
   auth_permission ||--o{ auth_role_permission : "permission_id"
+  id_directory_guard {
+    INT id
+    BIGINT version
+  }
+  id_organization_path {
+    BIGINT ancestor_id
+    BIGINT descendant_id
+    INT depth
+  }
+  id_organization ||--o{ id_organization_path : "ancestor_id"
+  id_organization ||--o{ id_organization_path : "descendant_id"
+  id_move_preview {
+    CHAR token
+    BIGINT actor_user_id
+    BIGINT organization_id
+    BIGINT new_parent_id
+    BIGINT target_version
+    BIGINT tree_version
+    DATETIME expires_at
+    BOOLEAN consumed
+  }
+  id_user ||--o{ id_move_preview : "actor_user_id"
+  id_organization ||--o{ id_move_preview : "organization_id"
+  id_organization ||--o{ id_move_preview : "new_parent_id"
+  audit_event {
+    BIGINT id
+    BIGINT actor_user_id
+    VARCHAR action
+    VARCHAR target_type
+    BIGINT target_id
+    JSON before_json
+    JSON after_json
+    VARCHAR trace_id
+    DATETIME created_at
+  }
+  id_user ||--o{ audit_event : "actor_user_id"
+  auth_role_organization {
+    BIGINT role_id
+    BIGINT organization_id
+    BOOLEAN include_descendants
+  }
+  auth_role ||--o{ auth_role_organization : "role_id"
+  id_organization ||--o{ auth_role_organization : "organization_id"
+  auth_role_permission_organization {
+    BIGINT role_id
+    BIGINT permission_id
+    BIGINT organization_id
+  }
+  auth_role_permission ||--o{ auth_role_permission_organization : "role_id_permission_id"
+  id_organization ||--o{ auth_role_permission_organization : "organization_id"
+  auth_namespace_guard {
+    BIGINT application_id
+    BIGINT version
+  }
+  auth_application ||--o{ auth_namespace_guard : "application_id"
+  auth_delegation {
+    BIGINT id
+    BIGINT application_id
+    BIGINT administrator_user_id
+    BOOLEAN enabled
+    DATETIME valid_from
+    DATETIME valid_to
+    BOOLEAN people_all
+    BIGINT version
+  }
+  auth_application ||--o{ auth_delegation : "application_id"
+  id_user ||--o{ auth_delegation : "administrator_user_id"
+  auth_delegation_organization {
+    BIGINT delegation_id
+    BIGINT organization_id
+    BOOLEAN include_descendants
+  }
+  auth_delegation ||--o{ auth_delegation_organization : "delegation_id"
+  id_organization ||--o{ auth_delegation_organization : "organization_id"
+  auth_delegation_role {
+    BIGINT delegation_id
+    BIGINT role_id
+  }
+  auth_delegation ||--o{ auth_delegation_role : "delegation_id"
+  auth_role ||--o{ auth_delegation_role : "role_id"
+  auth_delegation_permission {
+    BIGINT delegation_id
+    BIGINT permission_id
+    VARCHAR scope_kind
+  }
+  auth_delegation ||--o{ auth_delegation_permission : "delegation_id"
+  auth_permission ||--o{ auth_delegation_permission : "permission_id"
+  auth_delegation_permission_organization {
+    BIGINT delegation_id
+    BIGINT permission_id
+    BIGINT organization_id
+  }
+  auth_delegation_permission ||--o{ auth_delegation_permission_organization : "delegation_id_permission_id"
+  id_organization ||--o{ auth_delegation_permission_organization : "organization_id"
+  auth_delegation_action {
+    BIGINT delegation_id
+    BIGINT permission_id
+  }
+  auth_delegation ||--o{ auth_delegation_action : "delegation_id"
+  auth_permission ||--o{ auth_delegation_action : "permission_id"
+  auth_person_responsibility {
+    BIGINT application_id
+    BIGINT user_id
+    BIGINT delegation_id
+    VARCHAR state
+    BIGINT version
+  }
+  auth_application ||--o{ auth_person_responsibility : "application_id"
+  id_user ||--o{ auth_person_responsibility : "user_id"
+  auth_delegation |o--o{ auth_person_responsibility : "delegation_id"
+  auth_person_version {
+    BIGINT application_id
+    BIGINT user_id
+    BIGINT version
+  }
+  auth_application ||--o{ auth_person_version : "application_id"
+  id_user ||--o{ auth_person_version : "user_id"
+  auth_change_preview {
+    CHAR token
+    BIGINT actor_user_id
+    VARCHAR kind
+    BIGINT target_id
+    BIGINT application_id
+    BIGINT target_version
+    BIGINT tree_version
+    JSON namespace_json
+    JSON payload_json
+    DATETIME expires_at
+    BOOLEAN consumed
+  }
+  id_user ||--o{ auth_change_preview : "actor_user_id"
+  auth_application |o--o{ auth_change_preview : "application_id"

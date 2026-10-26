@@ -7,9 +7,9 @@ export default defineConfig({
   plugins: [vue(), tailwindcss()],
   server: {
     proxy: {
-      "/api": "http://127.0.0.1:8080",
-      "/oa/": "http://127.0.0.1:5174",
-      "/pmis/": "http://127.0.0.1:5175",
+      "/api": process.env.API_DEV_URL ?? "http://127.0.0.1:8080",
+      "/oa/": process.env.OA_DEV_URL ?? "http://127.0.0.1:5174",
+      "/pmis/": process.env.PMIS_DEV_URL ?? "http://127.0.0.1:5175",
     },
   },
 });

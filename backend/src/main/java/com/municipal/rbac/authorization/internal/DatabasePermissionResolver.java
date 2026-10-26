@@ -18,6 +18,11 @@ public class DatabasePermissionResolver implements PermissionResolver {
     }
 
     @Override
+    public Set<Long> managedApplications(long subjectId, String operation, Instant now) {
+        return mapper.managedApplications(subjectId, operation, now);
+    }
+
+    @Override
     public Set<String> resolve(long subjectId, Instant now) {
         LocalDateTime utc = LocalDateTime.ofInstant(now, ZoneOffset.UTC);
         // 不先去重来源：任何一个有效来源均可授予该权限。

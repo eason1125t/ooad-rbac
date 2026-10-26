@@ -1,0 +1,26 @@
+= 历史资料索引
+:toc:
+
+这些文件逐个由原位置移动留存，未删除历史正文。仅增加历史标记并修复相对引用；原始任务提示词和原始Excel保持原位置。旧文中的8/27/56接口、已确认但未实现等表述均是当时快照，当前以00–14编号正文为准。
+
+[cols="3,4,4",options="header"]
+|===
+|原文件 |中文留存 |当前阅读入口
+|`docs/plan.adoc` |link:01-阶段进度历史记录.adoc[01-阶段进度历史记录] |link:../01-项目总览与开发规划.adoc[01-项目总览与开发规划]
+|`docs/development-baseline.adoc` |link:02-开发基线定稿原文.adoc[02-开发基线定稿原文] |link:../03-功能与权限规则详解.adoc[03-功能与权限规则详解]
+|`docs/requirements.adoc` |link:03-需求历史说明.adoc[03-需求历史说明] |link:../03-功能与权限规则详解.adoc[03-功能与权限规则详解]
+|`docs/design.adoc` |link:04-设计历史说明.adoc[04-设计历史说明] |link:../02-架构与模块实现.adoc[02-架构与模块实现]
+|`docs/engineering.adoc` |link:05-工程历史说明.adoc[05-工程历史说明] |link:../11-开发协作与维护约定.adoc[11-开发协作与维护约定]
+|`docs/verification.adoc` |link:06-测试历史记录.adoc[06-测试历史记录] |link:../09-测试结果与验收记录.adoc[09-测试结果与验收记录]
+|`docs/identity-slice.adoc` |link:07-身份切片设计记录.adoc[07-身份切片设计记录] |link:../02-架构与模块实现.adoc[02-架构与模块实现]
+|`docs/authorization-slice.adoc` |link:08-授权切片设计记录.adoc[08-授权切片设计记录] |link:../03-功能与权限规则详解.adoc[03-功能与权限规则详解]
+|`docs/frontend-slice.adoc` |link:09-前端切片设计记录.adoc[09-前端切片设计记录] |link:../02-架构与模块实现.adoc[02-架构与模块实现]
+|`docs/admin-testing.adoc` |link:10-旧版手工测试路线.adoc[10-旧版手工测试路线] |link:../05-功能操作与测试指南.adoc[05-功能操作与测试指南]
+|`docs/backend-iteration-1.adoc` |link:11-后端切片准备记录.adoc[11-后端切片准备记录] |link:../01-项目总览与开发规划.adoc[01-项目总览与开发规划]
+|`docs/decisions.adoc` |link:12-方案确认历史记录.adoc[12-方案确认历史记录] |link:../03-功能与权限规则详解.adoc[03-功能与权限规则详解]
+|`docs/source-audit.adoc` |link:13-附件只读核验记录.adoc[13-附件只读核验记录] |link:../12-课程交付与资料边界.adoc[12-课程交付与资料边界]
+|`docs/course-specification.adoc` |link:14-旧课程规格汇编.adoc[14-旧课程规格汇编] |link:../12-课程交付与资料边界.adoc[12-课程交付与资料边界]
+|`docs/adr/001-baseline.adoc` |link:15-技术选型原始记录.adoc[15-技术选型原始记录] |link:../11-开发协作与维护约定.adoc[11-开发协作与维护约定]
+|===
+
+字段字典移为docs/08-数据库表与字段字典.adoc并继续由Flyway生成；traceability.csv移为docs/13-需求与用例追踪.csv。空的旧adr目录无需删除；协作入口已改为当前中文正文。

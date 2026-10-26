@@ -26,7 +26,7 @@ class MySqlMigrationTest {
                         .dataSource(datasource)
                         .locations("classpath:db/migration")
                         .load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(1);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(3);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         flyway.validate();
         try (var connection = datasource.getConnection();
@@ -70,8 +70,13 @@ class MySqlMigrationTest {
                     .isEqualTo(1);
             var resolver = new DatabasePermissionResolver(session.getMapper(GrantMapper.class));
             assertThat(resolver.resolve(1, Instant.now()))
-                    .containsExactlyInAnyOrder(
-                            "admin:console:view", "oa:document:view", "pmis:project:view");
+                    .contains(
+                            "admin:console:view",
+                            "oa:document:view",
+                            "pmis:project:view",
+                            "admin:platform:manage",
+                            "admin:organization:create")
+                    .hasSize(32);
             try (var sql = session.getConnection().createStatement()) {
                 Instant boundary = Instant.parse("2026-10-25T00:00:00Z");
                 sql.executeUpdate(

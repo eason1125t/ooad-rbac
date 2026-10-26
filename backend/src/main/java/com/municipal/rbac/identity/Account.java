@@ -2,4 +2,14 @@
 package com.municipal.rbac.identity;
 
 public record Account(
-        long id, String username, String passwordHash, boolean enabled, long authVersion) {}
+        long id,
+        String username,
+        String passwordHash,
+        boolean enabled,
+        long authVersion,
+        boolean forcePasswordChange) {
+    public Account(
+            long id, String username, String passwordHash, boolean enabled, long authVersion) {
+        this(id, username, passwordHash, enabled, authVersion, false);
+    }
+}

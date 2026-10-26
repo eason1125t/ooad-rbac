@@ -18,12 +18,22 @@ jobs:
       - run: npm install --global pnpm@12.4.2
       - run: docker info
       - run: bash backend/mvnw -f backend/pom.xml verify
+      - run: python3 scripts/check-ci-tests.py
+      - run: python3 scripts/schema_docs.py
+      - run: git diff --exit-code -- docs/08-数据库表与字段字典.adoc docs/diagrams/er.mmd
       - run: pnpm -C frontend install --frozen-lockfile
       - run: pnpm -C frontend run verify
+      - run: pnpm -C frontend run docs:api
+      - run: git diff --exit-code -- docs/14-API接口与模型清单.adoc
+      - run: python3 scripts/check_docs.py
       - run: pnpm -C frontend run docs
         env:
           CHROME_PATH: /usr/bin/google-chrome
+      - run: python3 scripts/check_docs.py --rendered
       - run: pnpm -C frontend exec node scripts/ui-smoke.mjs
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+      - run: pnpm -C frontend run test:admin
         env:
           CHROME_PATH: /usr/bin/google-chrome
       - uses: actions/upload-artifact@v4

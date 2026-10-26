@@ -7,10 +7,10 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface AccountMapper {
     @Select(
-            "SELECT id, username, password_hash, enabled, auth_version FROM id_user WHERE username = #{username}")
+            "SELECT id, username, password_hash, enabled, auth_version, force_password_change FROM id_user WHERE username = #{username}")
     Account byUsername(String username);
 
     @Select(
-            "SELECT id, username, password_hash, enabled, auth_version FROM id_user WHERE id = #{id}")
+            "SELECT id, username, password_hash, enabled, auth_version, force_password_change FROM id_user WHERE id = #{id}")
     Account byId(long id);
 }

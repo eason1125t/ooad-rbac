@@ -25,6 +25,8 @@ import org.testcontainers.utility.DockerImageName;
 @SpringBootTest(
         classes = RbacApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@org.springframework.test.annotation.DirtiesContext(
+        classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 @Testcontainers(disabledWithoutDocker = true)
 @ActiveProfiles("demo")
 class MySqlRedisIntegrationTest {
@@ -156,7 +158,7 @@ class MySqlRedisIntegrationTest {
                         jdbc.queryForObject(
                                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success=TRUE",
                                 Integer.class))
-                .isEqualTo(1);
+                .isEqualTo(3);
         assertThatThrownBy(
                         () ->
                                 jdbc.update(

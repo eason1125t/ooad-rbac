@@ -1,12 +1,18 @@
 /** 功能：挂载三个应用共用的小型工作台；应用ID/base由各自main提供，共享路由/登录和状态展示。 */
-import { createApp } from "vue";
+import { createApp, type Component } from "vue";
 import { createPinia } from "pinia";
 import { createRouter, createWebHistory } from "vue-router";
 import App from "./App.vue";
 import Login from "./Login.vue";
 import Workspace from "./Workspace.vue";
+import { useSession } from "./session";
 
-export function mount(application: "admin" | "oa" | "pmis", base: string) {
+export function mount(
+  application: "admin" | "oa" | "pmis",
+  base: string,
+  workspace?: Component,
+) {
+  const pinia = createPinia();
   const router = createRouter({
     history: createWebHistory(base),
     routes: [
@@ -20,7 +26,7 @@ export function mount(application: "admin" | "oa" | "pmis", base: string) {
           application === "admin"
             ? "/:page(workspace|organizations|roles|applications|audit)"
             : "/:page(workspace)",
-        component: Workspace,
+        component: workspace ?? Workspace,
         props: true,
       },
       ...(application === "admin"
@@ -38,9 +44,20 @@ export function mount(application: "admin" | "oa" | "pmis", base: string) {
       { path: "/:pathMatch(.*)*", redirect: "/" },
     ],
   });
+  if (workspace)
+    router.beforeEach(async (to) => {
+      const session = useSession(pinia);
+      if (!session.checked) await session.refresh();
+      if (to.path !== "/login" && !session.user)
+        return { path: "/login", query: { redirect: to.fullPath } };
+    });
+  window.addEventListener("municipal:session-expired", () => {
+    useSession(pinia).user = undefined;
+    void router.push("/login");
+  });
   createApp(App)
     .provide("application", application)
-    .use(createPinia())
+    .use(pinia)
     .use(router)
     .mount("#app");
 }

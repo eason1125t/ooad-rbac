@@ -1,0 +1,93 @@
+= 数据库设计说明
+:toc:
+
+== 事实源与现状
+
+唯一可执行DDL是link:../backend/src/main/resources/db/migration[Flyway迁移]，当前V1、V2、V3共24张业务表，另有flyway_schema_history。link:08-数据库表与字段字典.adoc[08字段字典]和下图从全部迁移生成，不能拿说明表格代替实际迁移。
+
+image::diagrams/er.svg[当前数据库ER,width=1200]
+
+当前没有资源树、在线导入、outbox、OA公文/审批或PMIS项目/审批表，也没有角色继承/SSD/DSD表。未来模型见10，不能把设计表当成已经存在。
+
+== 表分组与职责
+
+[cols="2,4,6",options="header"]
+|===
+|分组 |表 |职责与关键关系
+|行政身份 |id_organization |唯一总公司根、组织类型/父节点/负责人/版本；父组织和负责人FK RESTRICT
+|行政身份 |id_employee |稳定人员编码、主要组织、姓名/岗位/电话及版本；员工不等于登录账号
+|行政身份 |id_user |用户名/密码散列、可空employee_id、启用、auth_version、force_password_change和version；员工关联唯一
+|行政结构 |id_organization_path |ancestor_id+descendant_id复合主键、depth，含自身depth=0；支撑子树查询和范围判断
+|身份并发 |id_directory_guard |目录版本及一致性锁边界；不存业务授权
+|组织预览 |id_move_preview |操作者/会话、目标/新父、对象/目录版本、有效期及消费状态
+|权限目录 |auth_application、auth_permission |应用编码、权限application:resource:action；权限实现状态控制可新授予范围
+|角色与关系 |auth_role |应用归属、kind、专用角色owner、人员适用范围、版本与规范名称键
+|角色与关系 |auth_user_role |用户—角色成员关系、有效期、历史granted_by/granted_at；授予者后续状态不参与生效
+|角色与关系 |auth_role_permission |角色—权限、有效期、scope_kind；多角色权限取并集
+|范围节点 |auth_role_organization |专用角色人员适用组织及include_descendants
+|范围节点 |auth_role_permission_organization |某角色权限的业务数据组织节点；复合FK指向真实角色权限关系
+|应用并发 |auth_namespace_guard |每应用授权版本及锁；使依赖此空间的旧预览失效
+|管理员委派 |auth_delegation |应用+管理员唯一；enabled、任职时间、people_all、version
+|委派清单 |auth_delegation_organization、auth_delegation_role |人员范围与可授通用角色白名单，二者独立
+|委派清单 |auth_delegation_permission、auth_delegation_permission_organization |平台权限点与数据范围上限；节点复合FK指向对应上限记录
+|委派动作 |auth_delegation_action |平台控制的管理动作；不让普通业务权限自动变成管理权
+|人员责任 |auth_person_responsibility |应用+用户唯一维护责任、委派引用、CURRENT/AWAITING和版本
+|人员授权版本 |auth_person_version |应用+用户授权版本；不同于账号/人员资料version
+|授权预览 |auth_change_preview |角色权限、人员角色、交接和调岗预览，绑定目标/操作者/版本/过期与消费
+|审计 |audit_event |脱敏操作者、动作、目标、差异、结果/时间/traceId等当前DDL字段；同事务追加
+|===
+
+上表按职责合并展示，实际表名和逐字段约束以08为准。JSON仅用于预览/审计等有边界的快照，不把核心授权关系或组织节点存成逗号字符串。
+
+== 主要关联及不变量
+
+. 组织parent形成行政树，闭包表保存祖先/后代；唯一根、同父规范名唯一、类型和深度/环由数据库约束与服务校验共同保证。
+. 员工指向一个主要组织；普通账号一对一关联员工。引导/明确演示账号允许employee_id为空，不把所有账号计作真实员工。
+. 用户经auth_user_role连接角色，角色经auth_role_permission连接权限，权限属于应用。普通角色只能匹配同一应用，LEGACY例外受保护。
+. 专用角色owner和人员责任是维护关系，不作为普通用户授权运行时有效性的依赖。granted_by只追溯历史，不通过授予者enabled或权限过滤目标授权。
+. 委派D、管理员当前权限P和目标人员责任分别存储；新增/扩大时服务校验P∩D。表中FK只证明引用存在，不能代替业务范围校验。
+. 复合FK防止范围节点脱离真实的角色权限/委派权限来源。关系移除时显式按顺序处理节点，不使用数据库级联删除。
+
+== 类型、约束和索引原则
+
+* InnoDB、utf8mb4_0900_as_cs；显示名与规范比较键分开；稳定编码唯一、停用后不复用。
+* BIGINT在API层转十进制字符串；密码只存BCrypt散列，phone/username是字符串。
+* DATETIME(3)存UTC，连接固定+00:00；时间CHECK保证非空双边界时from小于to，[from,to)。
+* PRIMARY/UNIQUE防止一对一和重复关系；FK均保护历史引用。角色name_key的应用/owner规范键避免NULL破坏唯一性。
+* 组织parent、闭包反查、员工组织、账号员工、用户角色、角色权限、委派管理员、人员责任、审计时间等索引按当前查询组织；具体索引名/列顺序查08，不凭说明推断压测结果。
+* 时间有效性不靠后台删除到期行触发；每次权限计算按当前Clock检查，保留历史来源。
+
+== 版本、锁与事务
+
+对象version用于覆盖写并发，id_user.auth_version用于使旧认证失效；两者不是同一用途。组织目录版本、每应用命名空间版本和人员+应用授权版本分别绑定各自预览。
+
+一般授权写锁顺序为目录、应用命名空间、必要平台管理员保护、稳定顺序主体。全应用人员调岗会持更强目录锁并按应用ID顺序持相关锁，避免角色/组织变化穿插造成越权。所有写在事务中重新校验操作者权限和目标版本。
+
+授权事实、资料、版本变化、预览消费和审计同事务；审计写失败全部回滚。MySQL提交与Redis响应保存不是分布式原子事务，客户端503/断网后先回读，不能盲目重放。
+
+== 迁移和初始化
+
+[cols="1,4,5",options="header"]
+|===
+|版本 |增量 |兼容策略
+|V1 |8张身份/RBAC0基础表和最小目录 |仅建必要目录/引导角色；保留原校验和
+|V2 |组织规范名/唯一根/负责人、闭包、目录锁、身份版本/强改密、移动预览、审计 |兼容已有V1并回填；增加4张表
+|V3 |单应用角色分类/归属、数据范围/授予来源、委派/责任/授权版本/通用预览 |增加12张表；旧bootstrap保留受保护LEGACY，demo角色明确归属
+|===
+
+Flyway自动按版本顺序执行，重复启动只校验已应用迁移。新需求新增V4及后续迁移，不修改V1–V3，不手工改flyway_schema_history来掩盖漂移。
+
+DemoAccountsInitializer仅在显式demo下首次插入合成账号/角色；重启不恢复旧密码或授权。正常引导凭据从环境提供，原始Excel从未作为启动种子导入。
+
+== 生成、验证与运维边界
+
+[source,powershell]
+----
+python scripts/schema_docs.py
+pnpm -C frontend run docs
+backend/mvnw.cmd -f backend/pom.xml verify
+----
+
+第一条只解析本项目DDL生成08和可编辑ER，不连接数据库；第三条才在真实MySQL中验证空库、升级、约束和事务。两种检查不能互相替代。当前本机专用库已有V3，测试使用独占容器，不清开发库。
+
+已有数据库改动前先备份指定项目库，保存于忽略提交的私有位置并验证可恢复。Navicat仅是客户端，不手工执行自动生成字典；不删除其他库、不批量删目录、不用重建卷来掩盖迁移问题。正式备份策略及恢复时长仍待独立验收。

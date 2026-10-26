@@ -2,6 +2,7 @@
 package com.municipal.rbac.security;
 
 import com.municipal.rbac.authorization.PermissionResolver;
+import com.municipal.rbac.identity.AccountMapper;
 import com.municipal.rbac.shared.ApiResponse;
 import java.time.Clock;
 import java.util.Map;
@@ -14,10 +15,12 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     private final PermissionResolver resolver;
     private final Clock clock;
+    private final AccountMapper accounts;
 
-    public AuthController(PermissionResolver resolver, Clock clock) {
+    public AuthController(PermissionResolver resolver, Clock clock, AccountMapper accounts) {
         this.resolver = resolver;
         this.clock = clock;
+        this.accounts = accounts;
     }
 
     @GetMapping("/csrf")
@@ -36,6 +39,8 @@ public class AuthController {
                         Long.toString(principal.id()),
                         "username",
                         principal.getUsername(),
+                        "forcePasswordChange",
+                        accounts.byId(principal.id()).forcePasswordChange(),
                         "permissions",
                         resolver.resolve(principal.id(), clock.instant()).stream()
                                 .sorted()

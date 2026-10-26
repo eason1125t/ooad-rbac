@@ -70,6 +70,7 @@ class SecurityChainTest {
     @MockitoBean AccountMapper accounts;
     @MockitoBean PermissionResolver resolver;
     @MockitoBean StringRedisTemplate redis;
+    @MockitoBean LoginThrottle throttle;
     private Account account;
     private static final String TEST_PASSWORD = "1234";
 

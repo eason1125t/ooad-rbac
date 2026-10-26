@@ -1,9 +1,9 @@
-# 版本化接口唯一基线；frontend通过openapi-typescript生成模型，API测试验证本轮已暴露路径。
+# 功能：唯一API契约；可空对象展开以兼容OpenAPI3.0与协作平台回读，不另建手写DTO。
 openapi: 3.0.3
 info:
-  title: 市政统一权限 · 第一轮骨架 API
-  version: 0.1.0
-  description: 同站点Cookie Session。先GET csrf，所有不安全请求携带X-CSRF-TOKEN。原型不代表完整业务。
+  title: 市政统一权限 API
+  version: 0.3.1
+  description: 同站点Session/CSRF。身份平台操作与应用委派管理分离；新增/扩大授权检查本人权限与平台上限，已授角色不依赖授予人状态。组织移动的授权影响分析、完整资源CRUD及业务审批仍未实现。
 servers:
   - url: /
 security:
@@ -15,15 +15,6 @@ tags:
   - name: pmis
   - name: health
 x-planned-operations:
-  - requirement: FR-04
-    resource: /api/v1/admin/organizations 与 /employees
-    status: DESIGNED_NOT_EXPOSED
-    permission: admin:organization:view
-    pagination: page从1；size默认20最大100；非法400；排序id/name白名单
-  - requirement: FR-05
-    resource: /api/v1/admin/roles/{id}/permissions 与 /members
-    status: DESIGNED_NOT_EXPOSED
-    concurrency: expectedVersion必需；冲突409；保存与同步状态分离
   - requirement: FR-06
     resource: /api/v1/admin/imports
     status: DESIGNED_NOT_EXPOSED
@@ -40,11 +31,13 @@ paths:
   /api/v1/health:
     get:
       operationId: health
-      tags: [health]
+      tags:
+        - health
       summary: 存活状态，不代表依赖就绪
       security: []
       x-application: shared
-      x-requirements: [NFR-04]
+      x-requirements:
+        - NFR-04
       x-access: public
       x-csrf: false
       responses:
@@ -54,22 +47,32 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required:
+                  - data
                 properties:
                   data:
                     type: object
-                    required: [status]
+                    required:
+                      - status
                     properties:
-                      status: {type: string, enum: [UP]}
-              example: {data: {status: UP}}
+                      status:
+                        type: string
+                        enum:
+                          - UP
+              example:
+                data:
+                  status: UP
   /api/v1/auth/csrf:
     get:
       operationId: getCsrf
-      tags: [auth]
+      tags:
+        - auth
       summary: 获取服务端CSRF令牌，登录和退出后重新获取
       security: []
       x-application: shared
-      x-requirements: [FR-01, FR-03]
+      x-requirements:
+        - FR-01
+        - FR-03
       x-access: public
       x-csrf: false
       responses:
@@ -79,19 +82,29 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required:
+                  - data
                 properties:
-                  data: {$ref: '#/components/schemas/Csrf'}
-              example: {data: {token: opaque-example, headerName: X-CSRF-TOKEN}}
-        '503': {$ref: '#/components/responses/Unavailable'}
+                  data:
+                    $ref: '#/components/schemas/Csrf'
+              example:
+                data:
+                  token: opaque-example
+                  headerName: X-CSRF-TOKEN
+        '503':
+          $ref: '#/components/responses/Unavailable'
   /api/v1/auth/login:
     post:
       operationId: login
-      tags: [auth]
+      tags:
+        - auth
       summary: 环境初始化账号登录
       security: []
       x-application: shared
-      x-requirements: [FR-01, FR-03, FR-09]
+      x-requirements:
+        - FR-01
+        - FR-03
+        - FR-09
       x-access: public-with-csrf
       x-csrf: true
       parameters:
@@ -102,27 +115,46 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               type: object
-              required: [username, password]
+              required:
+                - username
+                - password
               properties:
-                username: {type: string, minLength: 1, maxLength: 64, example: oa-user-1}
-                password: {type: string, format: password, minLength: 1, maxLength: 72}
+                username:
+                  type: string
+                  minLength: 1
+                  maxLength: 64
+                  example: oa-user-1
+                password:
+                  type: string
+                  format: password
+                  minLength: 1
+                  maxLength: 72
       responses:
         '200':
           description: 登录成功并更新Session ID
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/AuthenticatedResponse'}
-              example: {data: {authenticated: true}}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '503': {$ref: '#/components/responses/Unavailable'}
+              schema:
+                $ref: '#/components/schemas/AuthenticatedResponse'
+              example:
+                data:
+                  authenticated: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/Unavailable'
   /api/v1/auth/logout:
     post:
       operationId: logout
-      tags: [auth]
+      tags:
+        - auth
       summary: 撤销当前会话（幂等），保留CSRF校验
       x-application: shared
-      x-requirements: [FR-01, FR-09]
+      x-requirements:
+        - FR-01
+        - FR-09
       x-access: session-logout
       x-csrf: true
       parameters:
@@ -132,17 +164,26 @@ paths:
           description: 当前会话已撤销
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/AuthenticatedResponse'}
-              example: {data: {authenticated: false}}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '503': {$ref: '#/components/responses/Unavailable'}
+              schema:
+                $ref: '#/components/schemas/AuthenticatedResponse'
+              example:
+                data:
+                  authenticated: false
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/Unavailable'
   /api/v1/auth/me:
     get:
       operationId: getMe
-      tags: [auth]
+      tags:
+        - auth
       summary: 当前服务端主体及实时权限集合
       x-application: shared
-      x-requirements: [FR-01, FR-02, FR-09]
+      x-requirements:
+        - FR-01
+        - FR-02
+        - FR-09
       x-access: authenticated
       x-csrf: false
       responses:
@@ -152,140 +193,5091 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [data]
+                required:
+                  - data
                 properties:
-                  data: {$ref: '#/components/schemas/Me'}
-              example: {data: {id: '1', username: oa-user-1, permissions: ['oa:document:view']}}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '503': {$ref: '#/components/responses/Unavailable'}
+                  data:
+                    $ref: '#/components/schemas/Me'
+              example:
+                data:
+                  id: '1'
+                  username: oa-user-1
+                  permissions:
+                    - oa:document:view
+                  forcePasswordChange: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/Unavailable'
   /api/v1/admin/demo:
     get:
       operationId: adminDemo
-      tags: [admin]
+      tags:
+        - admin
       summary: 验证管理端统一权限入口
       x-application: admin
-      x-requirements: [FR-02, FR-03]
+      x-requirements:
+        - FR-02
+        - FR-03
       x-access: permission
       x-permission: admin:console:view
       x-csrf: false
       responses:
-        '200': {$ref: '#/components/responses/Demo'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '503': {$ref: '#/components/responses/Unavailable'}
+        '200':
+          $ref: '#/components/responses/Demo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/Unavailable'
   /api/v1/oa/demo:
     get:
       operationId: oaDemo
-      tags: [oa]
+      tags:
+        - oa
       summary: 验证OA统一权限入口，不返回业务记录
       x-application: oa
-      x-requirements: [FR-02, FR-03, FR-07]
+      x-requirements:
+        - FR-02
+        - FR-03
+        - FR-07
       x-access: permission
       x-permission: oa:document:view
       x-csrf: false
       responses:
-        '200': {$ref: '#/components/responses/Demo'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '503': {$ref: '#/components/responses/Unavailable'}
+        '200':
+          $ref: '#/components/responses/Demo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/Unavailable'
   /api/v1/pmis/demo:
     get:
       operationId: pmisDemo
-      tags: [pmis]
+      tags:
+        - pmis
       summary: 验证工程项目统一权限入口，不返回业务记录
       x-application: pmis
-      x-requirements: [FR-02, FR-03, FR-08]
+      x-requirements:
+        - FR-02
+        - FR-03
+        - FR-08
       x-access: permission
       x-permission: pmis:project:view
       x-csrf: false
       responses:
-        '200': {$ref: '#/components/responses/Demo'}
-        '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '503': {$ref: '#/components/responses/Unavailable'}
+        '200':
+          $ref: '#/components/responses/Demo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/organizations:
+    get:
+      operationId: listOrganizations
+      tags:
+        - admin
+      summary: 组织树的平铺节点，当前仅平台管理员
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: false
+      parameters: []
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - items
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:organization:view
+      x-platform-only: true
+    post:
+      operationId: createOrganization
+      tags:
+        - admin
+      summary: 创建唯一根或合法子组织
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '201':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:organization:create
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationCreate'
+  /api/v1/admin/organizations/{id}:
+    get:
+      operationId: getOrganization
+      tags:
+        - admin
+      summary: 组织详情
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:organization:view
+      x-platform-only: true
+    put:
+      operationId: updateOrganization
+      tags:
+        - admin
+      summary: 修改名称和负责人，不修改层级/类型
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:organization:update
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationUpdate'
+  /api/v1/admin/organizations/{id}/status:
+    post:
+      operationId: changeOrganizationStatus
+      tags:
+        - admin
+      summary: 启停组织；启用子组织/在职员工阻止停用
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:organization:status
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+  /api/v1/admin/organizations/{id}/move-preview:
+    post:
+      operationId: previewOrganizationMove
+      tags:
+        - admin
+      summary: 预览移动；已授权人员影响分析待接入则409拒绝
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MovePreview'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:organization:move
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovePreviewRequest'
+  /api/v1/admin/organizations/{id}/move:
+    post:
+      operationId: moveOrganization
+      tags:
+        - admin
+      summary: 确认操作者绑定的15分钟移动预览，版本变化409/过期410
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Organization'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:organization:move
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveCommit'
+  /api/v1/admin/employees:
+    get:
+      operationId: listEmployees
+      tags:
+        - admin
+      summary: 分页人员；当前平台全量，业务管理员拒绝
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+            default: ''
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - id
+              - name
+            default: id
+        - name: enabled
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: organizationId
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: includeDescendants
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EmployeePage'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:employee:view
+      x-platform-only: true
+    post:
+      operationId: createEmployee
+      tags:
+        - admin
+      summary: 创建人员资料，不自动建号或授权
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '201':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Employee'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:employee:create
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+  /api/v1/admin/employees/{id}:
+    get:
+      operationId: getEmployee
+      tags:
+        - admin
+      summary: 人员详情
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Employee'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:employee:view
+      x-platform-only: true
+    put:
+      operationId: updateEmployee
+      tags:
+        - admin
+      summary: 仅编辑姓名/电话；岗位和组织变动需后续原子换角
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Employee'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:employee:update
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdate'
+  /api/v1/admin/employees/{id}/status:
+    post:
+      operationId: changeEmployeeStatus
+      tags:
+        - admin
+      summary: 离职仅停用本人账号/撤回本人角色；其他用户不变
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Employee'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:employee:status
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+  /api/v1/admin/accounts:
+    get:
+      operationId: listAccounts
+      tags:
+        - admin
+      summary: 分页账号，无密码散列
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+            default: ''
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - id
+              - name
+            default: id
+        - name: enabled
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ManagedAccountPage'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:account:view
+      x-platform-only: true
+    post:
+      operationId: createAccount
+      tags:
+        - admin
+      summary: 显式为启用员工建号，一对一，不自动授予角色
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '201':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TemporaryCredential'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:account:create
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountCreate'
+  /api/v1/admin/accounts/{id}:
+    get:
+      operationId: getAccount
+      tags:
+        - admin
+      summary: 账号详情，无密码散列
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ManagedAccount'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:account:view
+      x-platform-only: true
+  /api/v1/admin/accounts/{id}/status:
+    post:
+      operationId: changeAccountStatus
+      tags:
+        - admin
+      summary: 启停账号；不得停用最后平台管理员
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ManagedAccount'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:account:status
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+  /api/v1/admin/accounts/{id}/password-reset:
+    post:
+      operationId: resetAccountPassword
+      tags:
+        - admin
+      summary: 平台重置临时口令并撤销旧身份
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/TemporaryCredential'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:account:reset-password
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordReset'
+  /api/v1/auth/password:
+    post:
+      operationId: changeOwnPassword
+      tags:
+        - auth
+      summary: 本人校验旧口令后改密，撤销全部旧会话，当前会话退出
+      x-application: shared
+      x-requirements:
+        - FR-09
+      x-access: authenticated
+      x-csrf: true
+      parameters:
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - authenticated
+                    properties:
+                      authenticated:
+                        type: boolean
+                        enum:
+                          - false
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+  /api/v1/admin/audit:
+    get:
+      operationId: listIdentityAudit
+      tags:
+        - admin
+      summary: 分页只读管理变更审计，不提供删除或原始秘密
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AuditRecordPage'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:audit:view
+      x-platform-only: true
+  /api/v1/admin/managed-applications:
+    get:
+      operationId: listManagedApplications
+      tags:
+        - admin
+      summary: 当前可管理应用及范围/上限，不按岗位推断
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters: []
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - items
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AccessApplication'
+                        maxItems: 100
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:application:view
+      x-management-console: true
+  /api/v1/admin/applications/{applicationId}/permissions:
+    get:
+      operationId: listApplicationPermissions
+      tags:
+        - admin
+      summary: 已登记权限只读目录，未实现点不得新授予
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - items
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AccessPermission'
+                        maxItems: 5000
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:view
+      x-managed-application: true
+  /api/v1/admin/applications/{applicationId}/roles:
+    get:
+      operationId: listApplicationRoles
+      tags:
+        - admin
+      summary: SQL分页过滤可见通用/本人专用角色
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+            default: ''
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessRolePage'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:view
+      x-managed-application: true
+    post:
+      operationId: createApplicationRole
+      tags:
+        - admin
+      summary: 创建单应用角色，业务管理员仅SCOPED且不自提权
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '201':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessRole'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:create
+      x-managed-application: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessRoleCreate'
+  /api/v1/admin/applications/{applicationId}/roles/{roleId}:
+    get:
+      operationId: getApplicationRole
+      tags:
+        - admin
+      summary: 角色详情及当前可编辑/可分配状态
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessRole'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:view
+      x-managed-application: true
+    put:
+      operationId: updateApplicationRole
+      tags:
+        - admin
+      summary: 覆盖基本信息/人员范围，保留代码和类型
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessRole'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:update
+      x-managed-application: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessRoleUpdate'
+  /api/v1/admin/applications/{applicationId}/roles/{roleId}/status:
+    post:
+      operationId: changeApplicationRoleStatus
+      tags:
+        - admin
+      summary: 角色启停；恢复时校验完整权限和影响
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessRole'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:status
+      x-managed-application: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+  /api/v1/admin/applications/{applicationId}/roles/{roleId}/owner-preview:
+    post:
+      operationId: previewRoleOwnerTransfer
+      tags:
+        - admin
+      summary: 平台预览专用角色及成员维护责任转交，不裁剪旧权限
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessPreview'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:transfer
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessRoleOwner'
+  /api/v1/admin/applications/{applicationId}/roles/{roleId}/owner:
+    put:
+      operationId: transferRoleOwner
+      tags:
+        - admin
+      summary: 平台确认角色维护责任交接
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessRole'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:transfer
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessCommit'
+  /api/v1/admin/applications/{applicationId}/roles/{roleId}/permissions:
+    get:
+      operationId: getRolePermissions
+      tags:
+        - admin
+      summary: 角色权限定义及版本
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessRolePermissions'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:view
+      x-managed-application: true
+    put:
+      operationId: replaceRolePermissions
+      tags:
+        - admin
+      summary: 确认预览并同事务替换角色权限和审计
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessRolePermissions'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:permissions
+      x-managed-application: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessCommit'
+  /api/v1/admin/applications/{applicationId}/roles/{roleId}/permissions/preview:
+    post:
+      operationId: previewRolePermissions
+      tags:
+        - admin
+      summary: 预览权限差异，新增/扩大部分受本人权限及平台上限限制
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessPreview'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:permissions
+      x-managed-application: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessPermissionSet'
+  /api/v1/admin/applications/{applicationId}/roles/{roleId}/members:
+    get:
+      operationId: listRoleMembers
+      tags:
+        - admin
+      summary: SQL分页仅返回可维护人员，不隐藏分页后的越界行
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+            default: ''
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessRoleMemberPage'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:grant:view
+      x-managed-application: true
+    post:
+      operationId: addRoleMembers
+      tags:
+        - admin
+      summary: 最多100人，任一越界整批拒绝
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessBatchResult'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:members
+      x-managed-application: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessMemberBatch'
+  /api/v1/admin/applications/{applicationId}/roles/{roleId}/members/remove:
+    post:
+      operationId: removeRoleMember
+      tags:
+        - admin
+      summary: 只撤回指定人员的该角色，无关系时幂等成功
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessUserRoles'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:members
+      x-managed-application: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessMemberRemoval'
+  /api/v1/admin/applications/{applicationId}/people:
+    get:
+      operationId: listManageablePeople
+      tags:
+        - admin
+      summary: SQL分页当前可维护人员，无电话/范围外人员
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+            default: ''
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessPersonPage'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:grant:view
+      x-managed-application: true
+  /api/v1/admin/applications/{applicationId}/users/{userId}/roles:
+    get:
+      operationId: getUserApplicationRoles
+      tags:
+        - admin
+      summary: 人员本应用角色/有效期/维护责任及应用级授权版本
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessUserRoles'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:grant:view
+      x-managed-application: true
+    put:
+      operationId: replaceUserApplicationRoles
+      tags:
+        - admin
+      summary: 确认预览按应用覆盖，审计与版本同事务
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessUserRoles'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:grant:update
+      x-managed-application: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessCommit'
+  /api/v1/admin/applications/{applicationId}/users/{userId}/roles/preview:
+    post:
+      operationId: previewUserApplicationRoles
+      tags:
+        - admin
+      summary: 预览人员角色集合差异，不追溯裁剪历史合法权限
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessPreview'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:grant:update
+      x-managed-application: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessUserRoleSet'
+  /api/v1/admin/applications/{applicationId}/users/{userId}/effective-permissions:
+    get:
+      operationId: getUserEffectivePermissions
+      tags:
+        - admin
+      summary: 只读有效权限、数据范围和角色来源，授予者状态不参与
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessEffective'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:grant:view
+      x-managed-application: true
+  /api/v1/admin/applications/{applicationId}/delegations:
+    get:
+      operationId: listApplicationDelegations
+      tags:
+        - admin
+      summary: 平台分页查询应用管理员委派
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+            default: ''
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessDelegationPage'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:delegation:view
+      x-platform-only: true
+    post:
+      operationId: createApplicationDelegation
+      tags:
+        - admin
+      summary: 平台任命管理员并指定组织/角色/权限上限
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '201':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessDelegation'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:delegation:manage
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessDelegationSet'
+  /api/v1/admin/applications/{applicationId}/delegations/{delegationId}:
+    put:
+      operationId: updateApplicationDelegation
+      tags:
+        - admin
+      summary: 配置更新只影响以后维护和新增授权
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: delegationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessDelegation'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:delegation:manage
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessDelegationSet'
+  /api/v1/admin/applications/{applicationId}/delegations/{delegationId}/status:
+    post:
+      operationId: changeApplicationDelegationStatus
+      tags:
+        - admin
+      summary: 撤销管理资格仅将维护责任待接管，不撤回其他人的角色
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: delegationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessDelegation'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:delegation:manage
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+  /api/v1/admin/applications/{applicationId}/responsibilities/{userId}:
+    get:
+      operationId: getUserResponsibility
+      tags:
+        - admin
+      summary: 平台读取人员本应用维护责任
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    nullable: true
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - applicationId
+                      - userId
+                      - delegationId
+                      - state
+                      - version
+                    properties:
+                      applicationId:
+                        type: string
+                        pattern: ^[1-9][0-9]{0,18}$
+                      userId:
+                        type: string
+                        pattern: ^[1-9][0-9]{0,18}$
+                      delegationId:
+                        type: string
+                        pattern: ^[1-9][0-9]{0,18}$
+                        nullable: true
+                      state:
+                        type: string
+                        enum:
+                          - CURRENT
+                          - AWAITING
+                      version:
+                        type: integer
+                        format: int64
+                        minimum: 0
+                        maximum: 9007199254740991
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:delegation:view
+      x-platform-only: true
+    put:
+      operationId: setUserResponsibility
+      tags:
+        - admin
+      summary: 平台指定或转交维护责任，旧角色独立生效
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessResponsibility'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:responsibility:manage
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessResponsibilitySet'
+  /api/v1/admin/employees/{id}/assignment-preview:
+    post:
+      operationId: previewEmployeeAssignment
+      tags:
+        - admin
+      summary: 平台预览本人全部撤旧/授新及KEEP/RETIRE管理任职
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessPreview'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:employee:transfer
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessEmployeeTransfer'
+  /api/v1/admin/employees/{id}/assignment:
+    put:
+      operationId: replaceEmployeeAssignment
+      tags:
+        - admin
+      summary: 原子资料/角色/维护变动，失败全部回滚，他人权限不变
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessEmployeeTransferResult'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:employee:transfer
+      x-platform-only: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessCommit'
+  /api/v1/auth/effective-permissions:
+    get:
+      operationId: getOwnEffectivePermissions
+      tags:
+        - auth
+      summary: 本人按应用读取有效权限/来源，不接受客户端操作者
+      x-application: shared
+      x-requirements:
+        - FR-05
+      x-access: authenticated
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AccessEffective'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/applications/{applicationId}/organizations:
+    get:
+      operationId: listApplicationOrganizations
+      tags:
+        - admin
+      summary: 管理范围组织名称目录，仅含必要祖先和获准范围，无人员/计数
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功，当前事实已生效；预览尚未修改授权
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - items
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AccessOrganizationChoice'
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:role:view
+      x-managed-application: true
+  /api/v1/admin/employees/{id}/account:
+    get:
+      operationId: getEmployeeAccount
+      tags:
+        - admin
+      summary: 平台读取指定人员的账号，未建号时返回null
+      x-application: admin
+      x-requirements:
+        - FR-04
+      x-access: permission
+      x-csrf: false
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 成功；临时凭据响应禁止缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required:
+                  - data
+                properties:
+                  data:
+                    nullable: true
+                    type: object
+                    additionalProperties: false
+                    required:
+                      - id
+                      - username
+                      - employeeId
+                      - enabled
+                      - forcePasswordChange
+                      - version
+                    properties:
+                      id:
+                        type: string
+                        pattern: ^[1-9][0-9]{0,18}$
+                      username:
+                        type: string
+                        minLength: 3
+                        maxLength: 64
+                        pattern: ^[a-z0-9][a-z0-9._-]{2,63}$
+                      employeeId:
+                        type: string
+                        pattern: ^[1-9][0-9]{0,18}$
+                        nullable: true
+                      enabled:
+                        type: boolean
+                      forcePasswordChange:
+                        type: boolean
+                      version:
+                        type: integer
+                        format: int64
+                        minimum: 0
+                        maximum: 9007199254740991
+        '400':
+          $ref: '#/components/responses/Identity400'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/Identity404'
+        '409':
+          $ref: '#/components/responses/Identity409'
+        '410':
+          $ref: '#/components/responses/Identity410'
+        '422':
+          $ref: '#/components/responses/Identity422'
+        '429':
+          $ref: '#/components/responses/Identity429'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+      x-permission: admin:account:view
+      x-platform-only: true
 components:
   securitySchemes:
-    sessionCookie: {type: apiKey, in: cookie, name: SESSION}
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: SESSION
   parameters:
     CsrfHeader:
       name: X-CSRF-TOKEN
       in: header
       required: true
-      schema: {type: string}
+      schema:
+        type: string
       description: 同一Cookie会话通过GET csrf取得的token
   schemas:
     Csrf:
       type: object
-      required: [token, headerName]
+      required:
+        - token
+        - headerName
       properties:
-        token: {type: string}
-        headerName: {type: string, enum: [X-CSRF-TOKEN]}
+        token:
+          type: string
+        headerName:
+          type: string
+          enum:
+            - X-CSRF-TOKEN
     Me:
       type: object
-      required: [id, username, permissions]
+      required:
+        - id
+        - username
+        - permissions
+        - forcePasswordChange
       properties:
-        id: {type: string, pattern: '^[0-9]+$'}
-        username: {type: string}
+        id:
+          type: string
+          pattern: ^[0-9]+$
+        username:
+          type: string
         permissions:
           type: array
           uniqueItems: true
-          items: {type: string}
+          items:
+            type: string
+        forcePasswordChange:
+          type: boolean
     AuthenticatedResponse:
       type: object
-      required: [data]
+      required:
+        - data
       properties:
         data:
           type: object
-          required: [authenticated]
+          required:
+            - authenticated
           properties:
-            authenticated: {type: boolean}
+            authenticated:
+              type: boolean
     DemoResponse:
       type: object
-      required: [data]
+      required:
+        - data
       properties:
         data:
           type: object
-          required: [application, status, message]
+          required:
+            - application
+            - status
+            - message
           properties:
-            application: {type: string, enum: [admin, oa, pmis]}
-            status: {type: string, enum: [SKELETON]}
-            message: {type: string}
+            application:
+              type: string
+              enum:
+                - admin
+                - oa
+                - pmis
+            status:
+              type: string
+              enum:
+                - SKELETON
+            message:
+              type: string
     Error:
       type: object
-      required: [code, message, traceId]
+      required:
+        - code
+        - message
+        - traceId
       properties:
-        code: {type: string}
-        message: {type: string}
-        traceId: {type: string}
-        details: {type: object, additionalProperties: true}
-      example: {code: FORBIDDEN, message: 无访问权限, traceId: example-trace}
+        code:
+          type: string
+        message:
+          type: string
+        traceId:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+      example:
+        code: FORBIDDEN
+        message: 无访问权限
+        traceId: example-trace
     PageMetadata:
       description: 未来列表接口共享规范，本轮未暴露列表
       type: object
-      required: [page, size, total]
+      required:
+        - page
+        - size
+        - total
       properties:
-        page: {type: integer, minimum: 1, default: 1}
-        size: {type: integer, minimum: 1, maximum: 100, default: 20}
-        total: {type: integer, minimum: 0}
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+        total:
+          type: integer
+          minimum: 0
+    Organization:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - code
+        - name
+        - nodeType
+        - parentId
+        - managerEmployeeId
+        - enabled
+        - version
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        code:
+          type: string
+          minLength: 3
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9._-]{2,63}$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        nodeType:
+          type: string
+          enum:
+            - HEADQUARTERS
+            - BRANCH
+            - DEPARTMENT
+        parentId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        managerEmployeeId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    OrganizationCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - name
+        - nodeType
+        - parentId
+      properties:
+        code:
+          type: string
+          minLength: 3
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9._-]{2,63}$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        nodeType:
+          type: string
+          enum:
+            - HEADQUARTERS
+            - BRANCH
+            - DEPARTMENT
+        parentId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+    OrganizationUpdate:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - managerEmployeeId
+        - expectedVersion
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        managerEmployeeId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    StatusChange:
+      type: object
+      additionalProperties: false
+      required:
+        - enabled
+        - expectedVersion
+      properties:
+        enabled:
+          type: boolean
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    MovePreviewRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - parentId
+        - expectedVersion
+      properties:
+        parentId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    MovePreview:
+      type: object
+      additionalProperties: false
+      required:
+        - token
+        - organizationId
+        - parentId
+        - expectedVersion
+        - treeVersion
+        - affectedEmployees
+        - expiresAt
+      properties:
+        token:
+          type: string
+          format: uuid
+        organizationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        parentId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        treeVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        affectedEmployees:
+          type: integer
+          minimum: 0
+        expiresAt:
+          type: string
+          format: date-time
+    MoveCommit:
+      type: object
+      additionalProperties: false
+      required:
+        - previewToken
+      properties:
+        previewToken:
+          type: string
+          format: uuid
+    Employee:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - employeeCode
+        - displayName
+        - organizationId
+        - positionName
+        - phone
+        - enabled
+        - version
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        employeeCode:
+          type: string
+          minLength: 3
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9._-]{2,63}$
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        organizationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        positionName:
+          type: string
+          nullable: true
+          maxLength: 100
+        phone:
+          type: string
+          nullable: true
+          maxLength: 32
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    EmployeeCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - employeeCode
+        - displayName
+        - organizationId
+        - positionName
+        - phone
+      properties:
+        employeeCode:
+          type: string
+          minLength: 3
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9._-]{2,63}$
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        organizationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        positionName:
+          type: string
+          nullable: true
+          maxLength: 100
+        phone:
+          type: string
+          nullable: true
+          maxLength: 32
+    EmployeeUpdate:
+      type: object
+      additionalProperties: false
+      required:
+        - displayName
+        - phone
+        - expectedVersion
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        phone:
+          type: string
+          nullable: true
+          maxLength: 32
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    ManagedAccount:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - username
+        - employeeId
+        - enabled
+        - forcePasswordChange
+        - version
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        username:
+          type: string
+          minLength: 3
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9._-]{2,63}$
+        employeeId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        enabled:
+          type: boolean
+        forcePasswordChange:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    AccountCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - username
+        - employeeId
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9._-]{2,63}$
+        employeeId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+    TemporaryCredential:
+      type: object
+      additionalProperties: false
+      required:
+        - account
+        - temporaryPassword
+      properties:
+        account:
+          $ref: '#/components/schemas/ManagedAccount'
+        temporaryPassword:
+          type: string
+          format: password
+          description: 仅此响应显示一次；不写审计或日志。demo为1234且不强制改密，正常环境随机强口令并强制改密。
+    PasswordReset:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    PasswordChange:
+      type: object
+      additionalProperties: false
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+          format: password
+          minLength: 1
+          maxLength: 72
+        newPassword:
+          type: string
+          format: password
+          minLength: 12
+          maxLength: 72
+          description: 至少12字符，最多72个UTF-8字节，且不能与旧密码相同；旧密码不受新策略拒绝。
+    AuditRecord:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - actorUserId
+        - action
+        - targetType
+        - targetId
+        - beforeState
+        - afterState
+        - traceId
+        - createdAt
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        actorUserId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        action:
+          type: string
+          minLength: 1
+          maxLength: 80
+        targetType:
+          type: string
+          minLength: 1
+          maxLength: 32
+        targetId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        beforeState:
+          type: object
+          nullable: true
+          additionalProperties: true
+        afterState:
+          type: object
+          nullable: true
+          additionalProperties: true
+        traceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        createdAt:
+          type: string
+          format: date-time
+    OrganizationPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+        - size
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Organization'
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+    EmployeePage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+        - size
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+    ManagedAccountPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+        - size
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagedAccount'
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+    AuditRecordPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+        - size
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditRecord'
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+    AccessScope:
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - organizationIds
+      properties:
+        kind:
+          type: string
+          enum:
+            - SELF
+            - ORG
+            - ORG_SUBTREE
+            - ALL
+        organizationIds:
+          type: array
+          items:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+          maxItems: 100
+    AccessOrganizationRule:
+      type: object
+      additionalProperties: false
+      required:
+        - organizationId
+        - includeDescendants
+      properties:
+        organizationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        includeDescendants:
+          type: boolean
+    AccessPeopleScope:
+      type: object
+      additionalProperties: false
+      required:
+        - allCompany
+        - organizations
+      properties:
+        allCompany:
+          type: boolean
+        organizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessOrganizationRule'
+          maxItems: 100
+    AccessPermission:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - applicationId
+        - code
+        - name
+        - enabled
+        - implementationStatus
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        applicationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        code:
+          type: string
+          minLength: 1
+          maxLength: 128
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        enabled:
+          type: boolean
+        implementationStatus:
+          type: string
+          enum:
+            - IMPLEMENTED
+            - PLANNED
+    AccessPermissionGrant:
+      type: object
+      additionalProperties: false
+      required:
+        - permissionId
+        - scope
+      properties:
+        permissionId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        scope:
+          $ref: '#/components/schemas/AccessScope'
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        validTo:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+    AccessPermissionView:
+      type: object
+      additionalProperties: false
+      required:
+        - permission
+        - scope
+        - validFrom
+        - validTo
+      properties:
+        permission:
+          $ref: '#/components/schemas/AccessPermission'
+        scope:
+          $ref: '#/components/schemas/AccessScope'
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        validTo:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+    AccessRoleCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - name
+        - kind
+        - ownerUserId
+        - personnelScope
+      properties:
+        code:
+          type: string
+          minLength: 3
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        kind:
+          type: string
+          enum:
+            - PLATFORM
+            - COMMON
+            - SCOPED
+        ownerUserId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        personnelScope:
+          $ref: '#/components/schemas/AccessPeopleScope'
+    AccessRoleUpdate:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - personnelScope
+        - expectedVersion
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        personnelScope:
+          $ref: '#/components/schemas/AccessPeopleScope'
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    AccessRole:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - applicationId
+        - code
+        - name
+        - kind
+        - ownerUserId
+        - enabled
+        - version
+        - personnelScope
+        - canEdit
+        - canAssign
+        - memberCount
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        applicationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        kind:
+          type: string
+          enum:
+            - PLATFORM
+            - COMMON
+            - SCOPED
+            - LEGACY
+        ownerUserId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        personnelScope:
+          $ref: '#/components/schemas/AccessPeopleScope'
+        canEdit:
+          type: boolean
+        canAssign:
+          type: boolean
+        memberCount:
+          type: integer
+          minimum: 0
+    AccessRolePermissions:
+      type: object
+      additionalProperties: false
+      required:
+        - roleId
+        - version
+        - permissions
+      properties:
+        roleId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessPermissionView'
+          maxItems: 2000
+    AccessPermissionSet:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+        - permissions
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessPermissionGrant'
+          maxItems: 2000
+    AccessPreview:
+      type: object
+      additionalProperties: false
+      required:
+        - token
+        - kind
+        - targetId
+        - applicationId
+        - targetVersion
+        - treeVersion
+        - namespaceVersions
+        - affectedUsers
+        - expiresAt
+        - beforeState
+        - afterState
+      properties:
+        token:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - ROLE_PERMISSIONS
+            - USER_ROLES
+            - ROLE_OWNER
+            - EMPLOYEE_TRANSFER
+        targetId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        applicationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        targetVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        treeVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        namespaceVersions:
+          type: object
+          additionalProperties:
+            type: integer
+            format: int64
+            minimum: 0
+            maximum: 9007199254740991
+        affectedUsers:
+          type: integer
+          minimum: 0
+        expiresAt:
+          type: string
+          format: date-time
+        beforeState:
+          type: object
+          additionalProperties: true
+        afterState:
+          type: object
+          additionalProperties: true
+    AccessCommit:
+      type: object
+      additionalProperties: false
+      required:
+        - previewToken
+      properties:
+        previewToken:
+          type: string
+          format: uuid
+    AccessRoleOwner:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+        - newAdministratorUserId
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        newAdministratorUserId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+    AccessMembershipInput:
+      type: object
+      additionalProperties: false
+      required:
+        - roleId
+      properties:
+        roleId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        validTo:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+    AccessMembership:
+      type: object
+      additionalProperties: false
+      required:
+        - roleId
+        - roleName
+        - kind
+        - enabled
+        - validFrom
+        - validTo
+        - grantedByUserId
+        - grantedAt
+      properties:
+        roleId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        roleName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        kind:
+          type: string
+          enum:
+            - PLATFORM
+            - COMMON
+            - SCOPED
+            - LEGACY
+        enabled:
+          type: boolean
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        validTo:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        grantedByUserId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        grantedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+    AccessUserRoleSet:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+        - memberships
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        memberships:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessMembershipInput'
+          maxItems: 100
+    AccessResponsibility:
+      type: object
+      additionalProperties: false
+      required:
+        - applicationId
+        - userId
+        - delegationId
+        - state
+        - version
+      properties:
+        applicationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        delegationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        state:
+          type: string
+          enum:
+            - CURRENT
+            - AWAITING
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    AccessResponsibilitySet:
+      type: object
+      additionalProperties: false
+      required:
+        - delegationId
+        - expectedVersion
+      properties:
+        delegationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          nullable: true
+    AccessUserRoles:
+      type: object
+      additionalProperties: false
+      required:
+        - applicationId
+        - userId
+        - version
+        - memberships
+        - responsibility
+      properties:
+        applicationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        memberships:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessMembership'
+          maxItems: 2000
+        responsibility:
+          nullable: true
+          type: object
+          additionalProperties: false
+          required:
+            - applicationId
+            - userId
+            - delegationId
+            - state
+            - version
+          properties:
+            applicationId:
+              type: string
+              pattern: ^[1-9][0-9]{0,18}$
+            userId:
+              type: string
+              pattern: ^[1-9][0-9]{0,18}$
+            delegationId:
+              type: string
+              pattern: ^[1-9][0-9]{0,18}$
+              nullable: true
+            state:
+              type: string
+              enum:
+                - CURRENT
+                - AWAITING
+            version:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 9007199254740991
+    AccessMemberInput:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - expectedVersion
+      properties:
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        validTo:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+    AccessMemberBatch:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+        - members
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessMemberInput'
+          maxItems: 100
+          minItems: 1
+    AccessMemberRemoval:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - expectedVersion
+        - expectedUserVersion
+      properties:
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        expectedUserVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    AccessBatchResult:
+      type: object
+      additionalProperties: false
+      required:
+        - roleId
+        - affectedUsers
+        - users
+      properties:
+        roleId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        affectedUsers:
+          type: integer
+          minimum: 0
+        users:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - userId
+              - version
+            properties:
+              userId:
+                type: string
+                pattern: ^[1-9][0-9]{0,18}$
+              version:
+                type: integer
+                format: int64
+                minimum: 0
+                maximum: 9007199254740991
+          maxItems: 100
+    AccessPerson:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - username
+        - employeeId
+        - displayName
+        - organizationId
+        - enabled
+        - grantVersion
+        - responsibility
+      properties:
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        username:
+          type: string
+          minLength: 1
+          maxLength: 64
+        employeeId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        organizationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        enabled:
+          type: boolean
+        grantVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        responsibility:
+          nullable: true
+          type: object
+          additionalProperties: false
+          required:
+            - applicationId
+            - userId
+            - delegationId
+            - state
+            - version
+          properties:
+            applicationId:
+              type: string
+              pattern: ^[1-9][0-9]{0,18}$
+            userId:
+              type: string
+              pattern: ^[1-9][0-9]{0,18}$
+            delegationId:
+              type: string
+              pattern: ^[1-9][0-9]{0,18}$
+              nullable: true
+            state:
+              type: string
+              enum:
+                - CURRENT
+                - AWAITING
+            version:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 9007199254740991
+    AccessRoleMember:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - username
+        - roleId
+        - validFrom
+        - validTo
+        - grantedByUserId
+        - grantedAt
+        - grantVersion
+      properties:
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        username:
+          type: string
+          minLength: 1
+          maxLength: 64
+        roleId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        validTo:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        grantedByUserId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        grantedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        grantVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    AccessCeiling:
+      type: object
+      additionalProperties: false
+      required:
+        - permissionId
+        - scope
+      properties:
+        permissionId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        scope:
+          $ref: '#/components/schemas/AccessScope'
+    AccessDelegationSet:
+      type: object
+      additionalProperties: false
+      required:
+        - administratorUserId
+        - enabled
+        - peopleScope
+        - commonRoleIds
+        - permissionCeilings
+        - expectedVersion
+      properties:
+        administratorUserId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        enabled:
+          type: boolean
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        validTo:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        peopleScope:
+          $ref: '#/components/schemas/AccessPeopleScope'
+        commonRoleIds:
+          type: array
+          items:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+          maxItems: 2000
+        permissionCeilings:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessCeiling'
+          maxItems: 2000
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          nullable: true
+    AccessDelegation:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - applicationId
+        - administratorUserId
+        - enabled
+        - validFrom
+        - validTo
+        - peopleScope
+        - commonRoleIds
+        - permissionCeilings
+        - version
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        applicationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        administratorUserId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        enabled:
+          type: boolean
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        validTo:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        peopleScope:
+          $ref: '#/components/schemas/AccessPeopleScope'
+        commonRoleIds:
+          type: array
+          items:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+          maxItems: 2000
+        permissionCeilings:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessCeiling'
+          maxItems: 2000
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+    AccessCapabilities:
+      type: object
+      additionalProperties: false
+      required:
+        - all
+        - self
+        - organizationIds
+        - subtreeRootIds
+      properties:
+        all:
+          type: boolean
+        self:
+          type: boolean
+        organizationIds:
+          type: array
+          items:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+          maxItems: 50000
+        subtreeRootIds:
+          type: array
+          items:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+          maxItems: 50000
+    AccessApplication:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - code
+        - name
+        - version
+        - platform
+        - delegation
+        - allowedOperations
+        - delegablePermissions
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        platform:
+          type: boolean
+        delegation:
+          nullable: true
+          type: object
+          additionalProperties: false
+          required:
+            - id
+            - applicationId
+            - administratorUserId
+            - enabled
+            - validFrom
+            - validTo
+            - peopleScope
+            - commonRoleIds
+            - permissionCeilings
+            - version
+          properties:
+            id:
+              type: string
+              pattern: ^[1-9][0-9]{0,18}$
+            applicationId:
+              type: string
+              pattern: ^[1-9][0-9]{0,18}$
+            administratorUserId:
+              type: string
+              pattern: ^[1-9][0-9]{0,18}$
+            enabled:
+              type: boolean
+            validFrom:
+              type: string
+              format: date-time
+              nullable: true
+              description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+            validTo:
+              type: string
+              format: date-time
+              nullable: true
+              description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+            peopleScope:
+              $ref: '#/components/schemas/AccessPeopleScope'
+            commonRoleIds:
+              type: array
+              items:
+                type: string
+                pattern: ^[1-9][0-9]{0,18}$
+              maxItems: 2000
+            permissionCeilings:
+              type: array
+              items:
+                $ref: '#/components/schemas/AccessCeiling'
+              maxItems: 2000
+            version:
+              type: integer
+              format: int64
+              minimum: 0
+              maximum: 9007199254740991
+        allowedOperations:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 128
+          maxItems: 100
+        delegablePermissions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - permissionId
+              - capabilities
+            properties:
+              permissionId:
+                type: string
+                pattern: ^[1-9][0-9]{0,18}$
+              capabilities:
+                $ref: '#/components/schemas/AccessCapabilities'
+          maxItems: 2000
+    AccessEffectiveSource:
+      type: object
+      additionalProperties: false
+      required:
+        - roleId
+        - permissionId
+        - code
+        - scope
+        - validFrom
+        - validTo
+        - grantedByUserId
+        - legacy
+      properties:
+        roleId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        permissionId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        code:
+          type: string
+          minLength: 1
+          maxLength: 128
+        scope:
+          $ref: '#/components/schemas/AccessScope'
+        validFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        validTo:
+          type: string
+          format: date-time
+          nullable: true
+          description: UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+        grantedByUserId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        legacy:
+          type: boolean
+    AccessEffective:
+      type: object
+      additionalProperties: false
+      required:
+        - userId
+        - applicationId
+        - permissions
+        - sources
+      properties:
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        applicationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        permissions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - permissionId
+              - code
+              - capabilities
+            properties:
+              permissionId:
+                type: string
+                pattern: ^[1-9][0-9]{0,18}$
+              code:
+                type: string
+                minLength: 1
+                maxLength: 128
+              capabilities:
+                $ref: '#/components/schemas/AccessCapabilities'
+          maxItems: 2000
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessEffectiveSource'
+          maxItems: 20000
+    AccessTransferApplication:
+      type: object
+      additionalProperties: false
+      required:
+        - applicationId
+        - memberships
+        - responsibilityDelegationId
+      properties:
+        applicationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        memberships:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessMembershipInput'
+          maxItems: 100
+        responsibilityDelegationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+    AccessEmployeeTransfer:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+        - expectedAccountVersion
+        - organizationId
+        - positionName
+        - managementAction
+        - applications
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+        expectedAccountVersion:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 9007199254740991
+          nullable: true
+        organizationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        positionName:
+          type: string
+          nullable: true
+          maxLength: 100
+        managementAction:
+          type: string
+          enum:
+            - KEEP
+            - RETIRE
+        applications:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessTransferApplication'
+          maxItems: 100
+    AccessEmployeeTransferResult:
+      type: object
+      additionalProperties: false
+      required:
+        - employee
+        - userId
+        - applications
+      properties:
+        employee:
+          $ref: '#/components/schemas/Employee'
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        applications:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessUserRoles'
+          maxItems: 100
+    AccessRolePage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+        - size
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessRole'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+          format: int64
+    AccessRoleMemberPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+        - size
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessRoleMember'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+          format: int64
+    AccessPersonPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+        - size
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessPerson'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+          format: int64
+    AccessDelegationPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+        - size
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccessDelegation'
+          maxItems: 100
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          minimum: 0
+          format: int64
+    AccessOrganizationChoice:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - code
+        - name
+        - parentId
+        - nodeType
+        - enabled
+        - peopleSelectable
+        - peopleSubtreeAllowed
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        code:
+          type: string
+        name:
+          type: string
+        parentId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        nodeType:
+          type: string
+          enum:
+            - HEADQUARTERS
+            - BRANCH
+            - DEPARTMENT
+        enabled:
+          type: boolean
+        peopleSelectable:
+          type: boolean
+        peopleSubtreeAllowed:
+          type: boolean
   responses:
     Demo:
       description: 已通过真实权限检查；业务仍为骨架
       content:
         application/json:
-          schema: {$ref: '#/components/schemas/DemoResponse'}
-          example: {data: {application: oa, status: SKELETON, message: 授权链路已接通，公文业务尚未实现}}
+          schema:
+            $ref: '#/components/schemas/DemoResponse'
+          example:
+            data:
+              application: oa
+              status: SKELETON
+              message: 授权链路已接通，公文业务尚未实现
     Unauthorized:
       description: 身份无效或过期/登录凭据错误
       content:
         application/json:
-          schema: {$ref: '#/components/schemas/Error'}
+          schema:
+            $ref: '#/components/schemas/Error'
     Forbidden:
       description: 身份有效但权限不足，或CSRF缺失/错误
       content:
         application/json:
-          schema: {$ref: '#/components/schemas/Error'}
+          schema:
+            $ref: '#/components/schemas/Error'
     Unavailable:
       description: 数据库/Redis等必要设施不可可靠读取，拒绝执行
       content:
         application/json:
-          schema: {$ref: '#/components/schemas/Error'}
+          schema:
+            $ref: '#/components/schemas/Error'
+    Identity400:
+      description: 请求结构、ID、分页或未知字段无效
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Identity404:
+      description: 目标不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Identity409:
+      description: 唯一/版本/状态冲突、预览失效或依赖授权模型未接入
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Identity410:
+      description: 移动预览已过期
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Identity422:
+      description: 组织层级、状态、关联或口令规则不满足
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Identity429:
+      description: 登录尝试过于频繁
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

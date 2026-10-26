@@ -15,7 +15,9 @@
     "format": "prettier --write apps packages scripts package.json tsconfig.json",
     "format:check": "prettier --check apps packages scripts package.json tsconfig.json",
     "verify": "pnpm contract && pnpm typecheck && pnpm build && pnpm format:check",
-    "docs": "node scripts/render-docs.mjs"
+    "docs": "pnpm docs:api && node scripts/render-docs.mjs",
+    "test:admin": "node scripts/admin-e2e.mjs",
+    "docs:api": "node scripts/generate-api-docs.mjs"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "12.1.0",

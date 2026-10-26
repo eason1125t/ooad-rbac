@@ -4,6 +4,15 @@ flowchart TD
   P --> M[authorization.internal]
   B[bootstrap] --> I
   B --> P
-  O[oa / pmis / admin] --> C[shared 响应契约]
+  A[administration HTTP与组合事务] --> I
+  A --> P
+  A --> D[audit 同事务追加]
+  P --> D
+  P --> I
+  A --> S
+  O[oa / pmis] --> C[shared 响应与错误契约]
+  A --> C
+  D --> C
+  D --> I
   S --> C
   S -. 方法授权 .-> O

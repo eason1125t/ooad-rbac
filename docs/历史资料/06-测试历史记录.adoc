@@ -1,0 +1,194 @@
+= 测试设计与实际验证
+
+:toc:
+
+NOTE: 历史快照。正文记录当时阶段与定稿，不作为当前完成清单；当前说明见link:../09-测试结果与验收记录.adoc[对应章节]，最新进度见link:../01-项目总览与开发规划.adoc[01]。原文件名：verification.adoc。
+
+== 用户要求再次执行验收（2026-10-26）
+
+重新执行全量后端verify、CI用例/覆盖率门槛、三端verify、当前15173真实登录链，以及隔离真实浏览器17组场景，均通过。后端84项（83通过、1原生MySQL可选跳过）、50必需容器测试均执行；浏览器17/17，0页面异常。本次补强撤权断言：员工先实际访问OA返回200，撤回角色后重新登录并实际访问返回403，不能只由管理端关系列表推断。
+
+本次独立日志为acceptance-rerun-backend.log、acceptance-rerun-ci-guard.log、acceptance-rerun-frontend.log、acceptance-rerun-live-login.log、acceptance-rerun-browser.log；汇总acceptance-rerun-summary.json及最新ui/admin-e2e.json。测试只使用合成数据和自建MySQL/Redis，finally停止自有进程与容器，不改开发库、不提交/推送。本次没有重复执行Apifox同步、原生MySQL可选套件或资源CRUD/导入/OA审批，原有边界仍有效。
+
+== 五工作区真实API表单执行证据（2026-10-26）
+
+[cols="2,3,5",options="header"]
+|===
+|检查 |结果 |证据与边界
+|后端全量 |PASS：84项，83通过、1可选跳过 |frontend-backend-full-verify.log；backend/mvnw.cmd -f backend/pom.xml verify。28授权+16身份+6原安全链，共50项容器全部执行，无把旧/新报告直接相加。
+|覆盖率门槛 |PASS |scripts/check-ci-tests.py；行2157/2290=94.19%，分支836/1112=75.18%，所有可执行生产包达到行80%/分支70%，无核心排除。frontend-coverage-summary.json。
+|新增只读接口 |PASS |授权容器用例验证有限组织目录、必要祖先、独立的数据范围、人员可选标记、未建号null与已建号回读、业务403；无DDL变化。
+|前端三端 |PASS |frontend-live-verify.log；pnpm -C frontend run verify，包括唯一契约58操作、TS生成、三端typecheck/build/format。
+|真实浏览器 |PASS：17组场景，0页面异常 |frontend-admin-e2e.log、ui/admin-e2e.json。独占MySQL8.4.7/Redis7.4.6与打包后端，页面创建组织/人员/账号/角色，权限预览提交，授予/撤回，业务访问变化，409恢复，完整角色集合，平台委派，业务管理员专用角色/权限/成员，跨应用和身份403，失权不级联v2，原子调岗，账号启停，平台审计与390px布局。不是模拟API测试；不写开发库。另验证退出后旧会话401及管理路由跳转登录。
+|截图审阅 |PASS |ui/admin-role-members-desktop.png、admin-business-grant-desktop.png、admin-business-role-desktop.png、admin-business-mobile.png、admin-audit-desktop.png、admin-audit-mobile.png；仅合成人员和授权，无凭据截图。
+|静态UI/文档 |PASS |frontend-ui-smoke.log与frontend-docs.log。合成401只检查admin登录保护、OA/PMIS原型、文档/图片，不用于宣称真实CRUD成功；真实CRUD证据独立。
+|Apifox |PASS：58操作/67模型 |frontend-apifox-mcp.log及frontend-apifox-semantic.log；私有项目8967444新增2接口/1模型，最终可空对象回读一致，认证/CSRF/平台或应用范围/请求响应约束匹配，无删除。
+|本机运行 |PASS |frontend-live-backend-out.log与*-dev-out.log；Flyway校验V1–V3无新增迁移。Windows保留5173段，run-frontends.ps1自动回退15173–15175；frontend-local-login.log与frontend-demo-accounts.log验证15173同站点真实会话和6账号/18矩阵。开发库未添加联调人员/业务授权。
+|远程状态 |未提交/推送 |codex/identity-foundation保留全部已有与本次修改；工作流已加入test:admin，尚未声称远程CI通过。
+|===
+
+手工测试见link:10-旧版手工测试路线.adoc[操作路线]。业务管理员只查询本应用责任人员；全局身份写入和审计仍平台专用。资源目录只读、无物理DELETE；含授权/范围引用的组织移动影响分析仍未实现，保护性409不是完整功能。导入、OA/PMIS审批、outbox/缓存和完整性能验收保持待办。
+
+== 应用授权第二切片执行证据（历史，2026-10-26）
+
+按契约→测试设计→V3→实现执行；V1/V2未修改。只用合成数据和隔离容器验证写入，不向宿主库添加测试人员或授权关系。
+
+[cols="2,3,5",options="header"]
+|===
+|检查 |结果 |证据与限制
+|全量后端verify |PASS：78项，77通过、1可选跳过 |access-release-verify.log；命令backend/mvnw.cmd -f backend/pom.xml spotless:apply verify。随后仅补充本切片的多专用角色交接和边界测试，最终受影响套件单独回归。
+|最终授权回归 |PASS：27项，0跳过 |access-final-authorization-regression.log；-Dtest=ApplicationAuthorizationIntegrationTest spotless:apply verify。包含失权/停用/过期不级联、两份上限、越应用/越组织/自授、批量原子性、预览并发/重放/过期、审计回滚、最后平台管理员、无账号调岗、原子换角、多个专用角色逐步交接。ScopePolicyTest另4项验证模板覆盖/交集/增量。
+|去重报告与容器 |PASS：83项唯一；49项容器0跳过 |check-ci-tests.py实际读取XML为82通过+1可选跳过；完整78与回归27含22项重复，不直接相加。容器为27授权+16身份+6原安全链。
+|独立MySQL8.4.8 |PASS：可选项真实执行 |access-native-mysql.log；mysql-smoke.ps1 -MySqlBin D:/codetool/Mysql/bin，1项0跳过。与上述83项中的可选项相同，因此合计83个唯一用例均实际执行过，不宣称单次全量无跳过。
+|覆盖率 |PASS项目门槛 |最终JaCoCo行2070/2203（93.96%）、分支787/1056（74.53%）；授权包1037/1131行（91.69%）、473/672分支（70.39%）。check-ci-tests.py对全部有可执行代码的生产包检查行80%、分支70%，未排除权限/安全/初始化代码；access-coverage-summary.json。
+|迁移/约束 |PASS |V2→V3保留两个checksum、空库V1–V3及重复无漂移均通过；24业务表+历史表。字典/ER支持复合FK、重生成散列稳定；不把纯文本生成当真实迁移。
+|本机专用库 |PASS |私有备份.tools/pre-v3-20261026.sql；access-live-out.log记录Flyway从2到3成功和当前8080启动。仅停止了核对为本项目的旧Java进程，数据库/Redis配置及资料保留。
+|真实API/会话 |PASS |verify-identity-api.ps1、verify-authorization-api.ps1；access-live-identity-check.log、access-live-authorization-check.log。平台角色/权限/人员/委派及本人来源只读API成功，无秘密字段且no-store；业务身份管理仍403。verify-demo-accounts.ps1的6账号/18检查及verify-local-login.ps1的8080、5173两次真实CSRF/登录/轮换/权限/退出回归通过。
+|契约/Apifox |PASS：56操作/66模型 |新增29操作/40模型，无删除；access-apifox-check.log及export语义检查通过，包含三类管理范围元数据、请求响应约束、认证/CSRF/权限。项目仍为私有8967444，无其他项目写入。
+|前端/文档 |PASS |access-frontend-verify.log为三应用类型/构建/格式；access-docs-final.log为ER/模块图/文档渲染。前端管理表单尚未联动，本次未增加业务界面，不冒充完成UI验收。
+|Git/远程CI |当前未提交/推送 |codex/identity-foundation保留第一与第二切片修改；main的d64e0c9及旧Actions40204931340只是之前的归档，不代表本次CI。
+|===
+
+最终回归中的关系均在自建容器；测试SQL清理仅针对这些容器，不删除宿主库资料或批量文件。补充自然到期只读责任视图和多角色分步交接后，最终27项套件实测通过；失效责任续期不自动取回待接管人员。CI同时要求三个容器套件完整执行及生产包覆盖率。
+
+边界：只实现已登记权限的只读目录，不提供完整资源CRUD；尚未提供已有授权/范围引用组织移动的影响分析，保留409。未实现前端管理写表单、真实导入、OA/PMIS记录/审批、outbox/缓存与完整负载验收。平台须显式配置管理委派及人员责任，演示平台入口不自动授予这些资格。MySQL事务与Redis响应保存仍非分布式原子，网络失败后应回读版本，不盲目覆盖重试。
+
+== 身份第一切片执行证据（历史，2026-10-26）
+
+先改唯一OpenAPI/测试设计，再加入V2，V1源文件无差异。以下均为实际执行结果，不能与下方保留的首轮26项混算：
+
+[cols="2,3,5",options="header"]
+|===
+|检查 |结果 |证据与限制
+|完整后端verify |PASS：52项，51通过、1可选跳过 |identity-final-verify.log；失败/错误0，跳过项为未配置MYSQL_TEST_URL的原生MySQL用例，随后独立执行成功。
+|真实容器集成 |PASS：新增16项+原6项均0跳过 |IdentityAdministrationIntegrationTest/MySqlRedisIntegrationTest XML；覆盖V1升级保留checksum、层级/闭包/预览、唯一/版本、强制改密/限流、审计回滚、最后管理员并发保护和失权不影响其他人。
+|独立MySQL8.4.8 |PASS：可选项实际执行及打包启动 |identity-mysql84-final.log为最终原生用例，identity-mysql84-smoke.log另记录打包demo/health200/Redis-down503/匿名401；空库V1/V2、Mapper/约束、重复迁移通过。两次运行后的52个唯一XML均PASS，不称为53项或完整verify单次无跳过。
+|覆盖率 |PASS项目门槛 |实际JaCoCo行847/875（96.80%）、分支290/356（81.46%），未排除核心；正式密码策略为策略单测、强制改密为真实HTTP链，不宣称生产部署验收。
+|本机V2/真实API |PASS |先私有备份，再Flyway升级专用ooad_rbac；identity-live-out.log、identity-api-check.json。仅以只读API复核，不导入人员、不写入正式测试业务数据。
+|六账号/同站点代理 |PASS |demo-accounts-check.json为6账号/18允许拒绝检查，local-login-check.json经5173验证CSRF/身份/轮换/权限/退出，口令仍按目录1234。
+|契约/Apifox |PASS：27操作/26模型 |新增19、更新me，无删除；check-contract及生成TS通过，MCP导入后独立export核对x-platform-only、权限/CSRF、参数及请求/响应约束。
+|三个前端 |PASS |identity-frontend-verify.log，类型/生产构建/格式检查通过；管理写页面仍未接新API，不把原型当真实CRUD。
+|文档/浏览器 |PASS |字段字典/ER由V1+V2同源生成，含新增ALTER字段/约束；identity-docs-render.log/identity-ui-smoke.log记录三端桌面/手机、五菜单/标签、状态、离线原型及当前设计文档检查通过。
+|远程CI |本次未运行 |main归档d64e0c9的旧Actions40204931340曾通过；当前身份切片在本地codex/identity-foundation，未擅自提交/推送。
+|===
+
+修复记录：首次新增测试有Container同名导入编译冲突，已改为明确导入；完整verify发现旧ArchUnit的..security..误包含JDK java.security.SecureRandom，改为明确禁止项目安全/授权/业务、Spring Security/Web及Servlet依赖，仍禁止identity反向耦合。失败日志identity-integration-first.log、identity-full-verify.log保留；不是通过移除模块边界检查刷绿。
+所有敏感写与审计同MySQL事务。响应阶段Session保存失败仍可能返回503；不能据HTTP重试盲目覆盖，应查询版本/事实确认，MySQL与Redis不是跨库原子事务。
+离职撤回本人角色前，审计保存角色ID及有效期快照，避免关系移除后不可追溯；对应集成测试检查快照并确认其他用户权限不变。CI新增check-ci-tests.py阻止必需容器套件被条件跳过，同时重生成字典/ER检查与迁移是否漂移；本机已检查真实报告及生成结果。
+第一切片当时的未实现项包括委派/完整角色写/原子换角；第二切片已补齐这些后端能力，见顶部。本段其余未实现项继续保留：已有授权或范围引用的组织移动影响分析、真实导入、OA/PMIS业务、授权缓存和outbox。
+
+== 本轮测试设计（编码前）
+
+[cols="1,2,5,2",options="header"]
+|===
+|用例 |需求 |断言与方法 |层次
+|TC-01 |FR-01 |获取真实CSRF、登录→me主体ID字符串→三个允许入口→退出→旧会话401 |安全链/集成
+|TC-02 |FR-03 |未登录业务GET401；已登录无权限403；缺/错CSRF登录403；未知未声明处理方法已登录403 |安全链
+|TC-03 |FR-03 |Resolver/Session Redis/数据库异常503；响应有traceId无堆栈；公开health200 |安全链/集成
+|TC-04 |FR-02 |有效角色/权限/应用启用才授予；from时刻含、to时刻不含；一个来源到期另一个有效仍允许；未来开始仍拒绝 |Clock+真实SQL集成
+|TC-05 |FR-09 |可控Clock在绝对截止前通过、截止时401，持续请求不延长绝对截止；缺时间标识拒绝 |单元/安全链
+|TC-06 |FR-09 |账号停用/身份版本变化，已有会话401；退出只撤销当前会话；空闲TTL实测 |安全链/集成
+|TC-07 |NFR-01 |业务无权限内部依赖，权限无HTTP/业务依赖；API注解覆盖完整；参数化权限表达式实际生效 |ArchUnit/安全链
+|TC-08 |NFR-02 |空库Flyway成功；唯一键/FK/有效期CHECK拒绝非法关系；重复迁移无漂移 |真实MySQL
+|TC-09 |NFR-04 |三个Vue类型检查/构建；契约校验/类型生成；adoc和ER/原型渲染 |工具/浏览器
+|TC-10 |FR-05/10 |expectedVersion冲突409、提交后事件与CAS版本、pending/故障关闭 |后续设计，NOT_IN_SCOPE
+|TC-11 |FR-06 |组织匹配、同名负责人、重复批次、原子回滚/重试 |后续设计，NOT_IN_SCOPE
+|TC-12 |FR-07/08 |SQL本人范围、伪造userId无效、审批状态与权限双检查 |后续完整业务，NOT_IN_SCOPE
+|===
+
+安全链单元测试允许用合成账号、内存Servlet会话/模拟Mapper与Redis；这些结果只证明安全配置与逻辑，不能冒充MySQL/Redis验证。
+集成测试使用Testcontainers MySQL/Redis，Docker不可用则明确SKIPPED；没有H2替代数据库。生产路径仍只使用MySQL与Redis。
+JaCoCo实际运行生成backend/target/site/jacoco/index.html与jacoco.xml；不排除权限/安全核心刷覆盖率。用户已随v2确认后续已实现核心行80%、分支70%的项目门槛，不是教师阈值，不将该门槛冒充已完成业务覆盖率。
+
+== 后续验收与性能
+
+用户已最终确认link:02-开发基线定稿原文.adoc[开发基线v2]的D12性能口径、覆盖率门槛及BA-01–BA-23反例设计；其中BA-03/09/10/11/12为授予后独立生效，BA-21/22/23补充角色替换回滚、待接管不影响业务及个人撤角色/全角色停用的差别。这些为待实现用例，不计入当前26个已实现用例，也不是业务验收PASS。
+
+已选10,000在线会话、每会话平均10秒一次请求形成约1,000请求/秒；不等同万QPS或万同时在途。
+环境、数据、预热2分钟/稳态15分钟、混合比例、统计量和各类接口目标以v2 D12为准；实际压测需记录CPU/RAM/连接池、RTT及失败率，不以本轮功能测试外推。
+登录、列表、写入、导入、审计、冷启动分别测试；30ms仅为服务端授权热读p95，非所有接口统一目标。项目口径已确认，教师要求未核验，尚未进行性能达标验收。
+scripts/performance-smoke.js 提供小负载入口；无完整压测时标NOT_IN_SCOPE，不能把smoke外推万级性能。
+
+== 本次执行证据
+
+执行日期2026-10-25，PowerShell7 / Java21.0.9 / Node24.13.0 / pnpm12.4.2；报告与日志仅包含合成测试记录。
+
+[cols="2,3,5",options="header"]
+|===
+|检查 |真实结果 |证据与限制
+|后端完整verify |PASS：26项，25通过、1跳过，0失败/错误 |backend-demo-final-verify.log；6项容器联合测试全部执行通过；可选独立MySQL测试默认缺MYSQL_TEST_URL跳过，另行执行结果单列。
+|隔离MySQL实测 |PASS：单独执行1项，并验证打包demo启动 |mysql-demo-smoke-fixed.log；本机MySQL8.4.8、独立13308实例，空库Flyway、二次迁移0项、validate、FK/唯一/CHECK、真实Mapper/JOIN；合成账号employee-1使用1234的BCrypt。打包进程创建super-admin、health200、Redis断开503和匿名401通过。与容器8.4.7版本差异保留。
+|初轮打包进程 |PASS：真实启动、引导账号和角色、health200、匿名401、Redis断开503 |mysql-smoke脚本-CheckApplication；当时尚无Redis，此记录仅证明启动和依赖故障路径。最新真实登录验证见下行。
+|当前开发环境贯通 |PASS：MySQL3306+Redis6380+后端8080与前端5173 |verify-local-login.ps1直连及经同站点代理均通过：CSRF403/200、登录、Cookie属性/轮换、me、三个权限入口200、退出和旧会话401。三个应用页面路径200，服务保持运行供用户体验。
+|安全链/授权 |PASS：真实Spring安全链和方法授权，模拟数据依赖 |CSRF取发、轮换Session ID、擦除凭据、me、三权限入口、低权限403、未声明403、退出当前会话、账号版本/停用401、绝对截止401、基础设施503；ArchUnit通过。
+|时间与多来源 |PASS：Clock单元及真实MySQL解析 |from含/to不含、未来开始、两层有效期、多来源去重/保留、用户/角色/权限/应用停用。无授权缓存，不依赖定时清理。
+|Redis Session/空闲TTL |PASS：6项Testcontainers真实MySQL8.4.7/Redis7.4.6联合测试 |原5项登录/退出、Cookie、2秒空闲过期、低权限/停用、迁移/时间测试通过；新增OA/PMIS管理员与员工账号跨应用隔离测试通过。
+|三个前端 |PASS：各自vue-tsc与Vite生产构建、格式检查 |frontend-verify.log；每次明确Scope3，不把零匹配当通过。admin/oa/pmis均约105kB未压缩JS。
+|OpenAPI/类型/Apifox |PASS本地及真实MCP语义回读 |8操作合法并生成TS；指定私有项目8967444桌面导入8接口/6模型，随后独立HTTP MCP客户端真实认证、发现18工具、读取项目/接口、修正3个公开接口误继承鉴权、重新导出。方法/路径、operationId、安全/CSRF/权限元数据、参数、请求/响应及6模型约束核对通过；排除展示元数据，不是逐字节比较。
+|adoc/ER |PASS：全部根adoc转HTML，3个Mermaid图渲染SVG |docs-render.log、reports/docs、docs/diagrams；Edge浏览器实测，Chrome本机启动故障后改用Edge。无未解析include/缺图。
+|浏览器UI |PASS：三应用桌面/手机、登录、5菜单、详情标签和全部状态、离线原型/文档 |ui-menu-smoke.log、reports/ui；目视检查新管理桌面。UI脚本API使用明确合成401；真实账号/API另由HTTP矩阵验证，二者不混淆。
+|演示账号/配置隔离 |PASS：6账号真实登录、18项应用访问矩阵 |demo-accounts-check.json；管理员平台演示入口及自身业务200、跨业务403，普通业务用户平台403，employee-1三个演示入口403。单测拒绝demo+prod、正常引导弱口令，且重启不恢复旧授权。旧随机admin已停用，未删除历史。
+|附件与隐私 |PASS：只读聚合计数、组织匹配、前后SHA256一致 |source-audit.adoc；原始xlsx被gitignore排除，未导入生产，测试仅合成样本；没有Git提交。
+|性能/完整业务 |NOT_IN_SCOPE，性能smoke SKIPPED |k6脚本存在，未运行负载；没有30ms/万级达标声明，未实现CRUD/导入/审批/缓存同步/RBAC1–3。
+|CI远程 |以GitHub Actions实际运行状态为准 |首轮骨架本地验收时未推送，此前为SKIPPED；本次用户授权首次归档将触发workflow，不能提前宣称CI绿灯。
+|===
+
+最新完整verify为25通过、1可选用例跳过；该可选MySQL用例随后独立实际执行通过。两次运行后的26个唯一用例XML均为PASS，不能说完整verify单次没有跳过，也不能把26+1说成27个用例。当前6项容器用例明确断言tests=6且failures/errors/skipped均为0。
+JaCoCo HTML/XML来自实际测试，未排除安全/权限核心；报告行273/284（96.13%）、分支95/120（79.17%），只覆盖本轮已实现代码（含新增demo初始化），不代表完整业务或性能验收。机器汇总reports/verification-summary.json从实际Surefire/JaCoCo XML读取生成。
+Flyway11.7.2对MySQL8.4有“最新已测试8.1”的兼容警告，迁移实测成功；升级兼容评估为剩余事项，未视为生产支持证明。Mockito Java21动态agent有未来JDK兼容提示，不影响本次测试结果。
+
+== 交付前回顾与修复
+
+已修复：MySQL自增列CHECK兼容问题（迁移首次执行前修复）；测试导入冲突；Pnpm12构建许可及Windows引号/零匹配导致未实际构建；应用显式Vue依赖；Session保存故障发生在写响应后的缓冲503适配；健康检查与Session依赖隔离；独立MySQL子进程的所有权核验和关闭；原型/SQL设计文字与最终实现差异；跨身份/角色的引导事务归回bootstrap组合根。
+后端无JWT、无关闭CSRF、无角色名授权、无客户端userId身份、无并行AOP/MVC权限检查；未来接口不暴露伪成功。DDL/字典/ER同源，原始附件只读。
+操作偏差：引导事务移动包后，为防止旧编译类残留，曾在一次循环中删除两个明确路径的旧AdminInitializer .class产物；这违反用户禁止批量删除的约束。未删除原始附件或源文件内容，已向用户说明；后续不再执行删除操作。不能将本轮描述为所有操作约束均无偏差。
+
+== 完成定义逐项状态
+
+[cols="1,2,5",options="header"]
+|===
+|提示词条目 |状态 |说明
+|1 需求/术语/范围 |PASS |requirements；首次要求来自提示词转述，截图尚未核验。
+|2 阶段/依赖/剩余任务 |PASS |plan唯一进度入口，traceability覆盖14项需求。
+|3 模块边界 |PASS |功能模块、公开Resolver/Checker、ArchUnit；audit/imports仅职责说明。
+|4 ER/字典/Flyway |PASS |同源生成，宿主8.4.8和容器8.4.7空库迁移及约束通过。
+|5 契约与Apifox |PASS本地及MCP语义核对 |指定私有项目8967444，独立HTTP MCP读取/修正/导出核对通过；重启后Codex内置工具实际读取项目成功。
+|6 三前端 |PASS |三个独立构建、重点原型及状态，不伪造保存。
+|7 最小链路 |PASS：真实MySQL/Redis链与当前宿主配置 |6项容器集成测试通过，宿主开发库及Redis的实际登录/CSRF/权限/退出、6账号矩阵和同站点代理验证通过。
+|8 RBAC0时间/来源 |PASS |Clock边界和多来源、真实SQL、停用行为；后续扩展有影响表。
+|9 JaCoCo真实报告 |PASS |来自本轮实际测试，核心未排除；不等于所有场景已集成验收。
+|10 敏感数据/秘密 |PASS |原始xlsx未改/提交，基础设施凭据保留私有配置；简单合成账号由显式demo配置初始化，正常引导无默认口令。
+|11 缺项透明 |PASS记录 |grill-me、Apifox MCP和真实Redis已落实；v2规则/生命周期/性能口径已定稿，具体DDL/API按切片细化，教师模板/性能实测仍缺。
+|12 命令/文档/延续 |PASS本地 |运行/验证命令实际执行、文档可渲染；远程CI以授权归档后的Actions记录为准。
+|===
+
+== 环境配置补充验证（2026-10-25）
+
+通过用户已打开的Navicat连接执行 .tools/navicat-local-setup.sql，界面显示Finished successfully。
+使用新开发账号连接127.0.0.1:3306，首次查询专用库表数0；启动打包后端后查询表数9（8业务表+Flyway历史）、迁移version=1/success=1、admin关联引导角色记录1条。
+HTTP实测health200、匿名OA401、CSRF503且code=DEPENDENCY_UNAVAILABLE并含traceId；reports/environment/backend-smoke.json和application-out.log保存证据。验证进程所有权核验后已关闭。此验证不包含真实Redis登录。
+
+Docker最初因缺VirtualMachinePlatform失败；后续用户管理员执行WSL脚本成功，两组件Enabled、退出码0、restartRequired=true，wsl --version实测2.7.14.0。Docker官方安装器SHA256/签名复核后重试成功，退出码0，docker客户端29.9.2；证据为wsl-admin-result.json、docker-install-result.json及官方安装日志。WSL备用下载的部分MSI仍保留为未完成文件，不作为可安装产物。WSL脚本缺少控制台反馈的问题已修复，保留UTF-8 BOM并通过Windows PowerShell5语法解析，不需为查看结果重跑安装。
+
+Apifox令牌仅验证本机是否存在，不输出内容。独立客户端通过官方https://api.apifox.com/mcp的initialize、notifications/initialized、tools/list、tools/call真实操作；getProjectSummary核对项目8967444，getStructureInfo/read及exportData取得8接口/6模型。发现公开health/csrf/login错误继承Session后，MCP updateHttpEndpoint逐项改为noauth，重新导出核对通过。比较保留接口与模型验证语义，排除info/servers、描述/示例和平台展示扩展。UTF-8原始响应显式解码以保留中文。reports/environment/apifox-mcp-check.json记录PASS，scripts/verify-apifox-mcp.ps1只读复核、frontend/scripts/check-apifox-export.mjs执行比较。OpenAPI中旧的外部环境状态已移除，由plan维护进度。
+
+新增脚本不记录令牌或MCP会话标识，秘密与报告路径均被gitignore排除。安装成功不等于Docker引擎/Redis登录已运行；这些运行验证在各自实际执行前仍保持待验证状态。
+重启前实际启动Docker Desktop，曾遇到Virtual Machine Platform not enabled；精确错误保留在docker-engine-precondition.log。用户在19:39重启后，Docker Linux引擎29.9.2就绪，docker-engine-check.json现已更新PASS；Redis7.4.6 healthy、PING=PONG，redis-check.json记录PASS。
+
+== 重启后的实际集成验证（2026-10-25）
+
+完整verify首次真实执行时，5项容器测试中的一项错误假设CHECK会被Spring归类为DataIntegrityViolationException；真实数据库已拒绝非法时间，返回3819及ck_ur_time。修复仅让断言核验底层SQLException的实际错误码和约束名，未削弱检查、未改写迁移。随后spotless:apply verify完整通过，日志backend-container-verify-fixed.log；初次失败日志backend-container-verify.log保留，5项容器测试全部0失败/0跳过。
+
+本机run-backend.ps1使用Navicat配置的专用MySQL库及Compose Redis启动8080，前端dev:all运行5173/5174/5175。verify-local-login.ps1直连8080和经过5173代理两次均PASS，证据local-login-direct-check.json和local-login-check.json；密码、Cookie、CSRF值不写报告。验证脚本修正了“403已签发会话后GET无需重复Set-Cookie”的断言，仍核验首次签发的HttpOnly/SameSite和登录轮换。页面/接口代理均真实200，不用合成API证明本机联调。
+
+当前Codex内置mcp__apifox工具已载入，通过getProjectSummary实际核验项目8967444，解除工具注册阻断。环境、最小登录鉴权链路本轮完成；完整CRUD/导入/审批、授权事件同步和性能验收仍不在本轮实现范围内。
+
+== 五工作区与简易演示账号（2026-10-25）
+
+用户确认菜单整合方向并要求统一测试命名/口令。Vue实现5菜单、对象详情标签、组织树/用户授权预览、角色权限/成员有效期、应用资源/管理员范围、审计格式；所有管理写操作仍禁用。独立离线原型同步为5工作区流程索引。保留旧validity/imports路径重定向，不并存旧编辑实现；当前导航不会冒充尚未接入的管理员范围过滤。
+
+DemoAccountsInitializer仅demo启用，从JSON读取合成账号，BCrypt存储；prod组合启动拒绝，正常BootstrapAdmin保留12字符以上要求。只创建缺失账号/角色，不重置已有密码或恢复已撤销角色。角色仅支撑当前3个演示权限点，业务管理员的完整委派写能力仍待新模型/API。configure-demo.ps1限定当前本机专用库，私有备份原.env，保留数据库及MCP凭据；旧admin显式停用并增加身份版本，SQL读取验证已停用且没有员工关联。
+
+测试账号/契约用户名示例已统一。Apifox MCP按methodAndPath更新8接口（无删除），6个既有模型保持，重新核对公开鉴权、契约语义及oa-user-1用户名示例通过。真实访问矩阵与直接/同站点登录均PASS；不将合成UI记录当作数据库管理功能。
+
+隔离MySQL打包demo复测首次暴露就绪判断过早：HTTP存活先于ApplicationRunner初始化事务提交，管理员计数暂为0。验证脚本改为有界轮询实际管理员角色关系提交，不修改数据库约束或放宽断言；mysql-demo-smoke-fixed.log记录复测PASS，初次失败日志mysql-demo-smoke.log保留。验证后只关闭脚本自建实例/进程，保留独立数据目录，不删除文件。

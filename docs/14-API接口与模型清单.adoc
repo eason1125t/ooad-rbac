@@ -1,0 +1,2256 @@
+// 自动生成：frontend/scripts/generate-api-docs.mjs；修改contracts/openapi.yaml后重生成。
+= API接口与模型清单
+:toc: left
+:toclevels: 1
+
+契约版本0.3.1；58个HTTP操作、67个模型。下列内容来自唯一OpenAPI；调用流程和版本语义见link:06-API设计与接口说明.adoc[06]。模型字段名保留程序名，说明使用中文。
+
+== 操作索引
+
+[cols="1,5,4",options="header"]
+|===
+|方法 |完整路径 |操作
+|GET |`/api/v1/health` |<<api-health,存活状态，不代表依赖就绪>>
+|GET |`/api/v1/auth/csrf` |<<api-getCsrf,获取服务端CSRF令牌，登录和退出后重新获取>>
+|POST |`/api/v1/auth/login` |<<api-login,环境初始化账号登录>>
+|POST |`/api/v1/auth/logout` |<<api-logout,撤销当前会话（幂等），保留CSRF校验>>
+|GET |`/api/v1/auth/me` |<<api-getMe,当前服务端主体及实时权限集合>>
+|GET |`/api/v1/admin/demo` |<<api-adminDemo,验证管理端统一权限入口>>
+|GET |`/api/v1/oa/demo` |<<api-oaDemo,验证OA统一权限入口，不返回业务记录>>
+|GET |`/api/v1/pmis/demo` |<<api-pmisDemo,验证工程项目统一权限入口，不返回业务记录>>
+|GET |`/api/v1/admin/organizations` |<<api-listOrganizations,组织树的平铺节点，当前仅平台管理员>>
+|POST |`/api/v1/admin/organizations` |<<api-createOrganization,创建唯一根或合法子组织>>
+|GET |`/api/v1/admin/organizations/{id}` |<<api-getOrganization,组织详情>>
+|PUT |`/api/v1/admin/organizations/{id}` |<<api-updateOrganization,修改名称和负责人，不修改层级/类型>>
+|POST |`/api/v1/admin/organizations/{id}/status` |<<api-changeOrganizationStatus,启停组织；启用子组织/在职员工阻止停用>>
+|POST |`/api/v1/admin/organizations/{id}/move-preview` |<<api-previewOrganizationMove,预览移动；已授权人员影响分析待接入则409拒绝>>
+|POST |`/api/v1/admin/organizations/{id}/move` |<<api-moveOrganization,确认操作者绑定的15分钟移动预览，版本变化409/过期410>>
+|GET |`/api/v1/admin/employees` |<<api-listEmployees,分页人员；当前平台全量，业务管理员拒绝>>
+|POST |`/api/v1/admin/employees` |<<api-createEmployee,创建人员资料，不自动建号或授权>>
+|GET |`/api/v1/admin/employees/{id}` |<<api-getEmployee,人员详情>>
+|PUT |`/api/v1/admin/employees/{id}` |<<api-updateEmployee,仅编辑姓名/电话；岗位和组织变动需后续原子换角>>
+|POST |`/api/v1/admin/employees/{id}/status` |<<api-changeEmployeeStatus,离职仅停用本人账号/撤回本人角色；其他用户不变>>
+|GET |`/api/v1/admin/accounts` |<<api-listAccounts,分页账号，无密码散列>>
+|POST |`/api/v1/admin/accounts` |<<api-createAccount,显式为启用员工建号，一对一，不自动授予角色>>
+|GET |`/api/v1/admin/accounts/{id}` |<<api-getAccount,账号详情，无密码散列>>
+|POST |`/api/v1/admin/accounts/{id}/status` |<<api-changeAccountStatus,启停账号；不得停用最后平台管理员>>
+|POST |`/api/v1/admin/accounts/{id}/password-reset` |<<api-resetAccountPassword,平台重置临时口令并撤销旧身份>>
+|POST |`/api/v1/auth/password` |<<api-changeOwnPassword,本人校验旧口令后改密，撤销全部旧会话，当前会话退出>>
+|GET |`/api/v1/admin/audit` |<<api-listIdentityAudit,分页只读管理变更审计，不提供删除或原始秘密>>
+|GET |`/api/v1/admin/managed-applications` |<<api-listManagedApplications,当前可管理应用及范围/上限，不按岗位推断>>
+|GET |`/api/v1/admin/applications/{applicationId}/permissions` |<<api-listApplicationPermissions,已登记权限只读目录，未实现点不得新授予>>
+|GET |`/api/v1/admin/applications/{applicationId}/roles` |<<api-listApplicationRoles,SQL分页过滤可见通用/本人专用角色>>
+|POST |`/api/v1/admin/applications/{applicationId}/roles` |<<api-createApplicationRole,创建单应用角色，业务管理员仅SCOPED且不自提权>>
+|GET |`/api/v1/admin/applications/{applicationId}/roles/{roleId}` |<<api-getApplicationRole,角色详情及当前可编辑/可分配状态>>
+|PUT |`/api/v1/admin/applications/{applicationId}/roles/{roleId}` |<<api-updateApplicationRole,覆盖基本信息/人员范围，保留代码和类型>>
+|POST |`/api/v1/admin/applications/{applicationId}/roles/{roleId}/status` |<<api-changeApplicationRoleStatus,角色启停；恢复时校验完整权限和影响>>
+|POST |`/api/v1/admin/applications/{applicationId}/roles/{roleId}/owner-preview` |<<api-previewRoleOwnerTransfer,平台预览专用角色及成员维护责任转交，不裁剪旧权限>>
+|PUT |`/api/v1/admin/applications/{applicationId}/roles/{roleId}/owner` |<<api-transferRoleOwner,平台确认角色维护责任交接>>
+|GET |`/api/v1/admin/applications/{applicationId}/roles/{roleId}/permissions` |<<api-getRolePermissions,角色权限定义及版本>>
+|PUT |`/api/v1/admin/applications/{applicationId}/roles/{roleId}/permissions` |<<api-replaceRolePermissions,确认预览并同事务替换角色权限和审计>>
+|POST |`/api/v1/admin/applications/{applicationId}/roles/{roleId}/permissions/preview` |<<api-previewRolePermissions,预览权限差异，新增/扩大部分受本人权限及平台上限限制>>
+|GET |`/api/v1/admin/applications/{applicationId}/roles/{roleId}/members` |<<api-listRoleMembers,SQL分页仅返回可维护人员，不隐藏分页后的越界行>>
+|POST |`/api/v1/admin/applications/{applicationId}/roles/{roleId}/members` |<<api-addRoleMembers,最多100人，任一越界整批拒绝>>
+|POST |`/api/v1/admin/applications/{applicationId}/roles/{roleId}/members/remove` |<<api-removeRoleMember,只撤回指定人员的该角色，无关系时幂等成功>>
+|GET |`/api/v1/admin/applications/{applicationId}/people` |<<api-listManageablePeople,SQL分页当前可维护人员，无电话/范围外人员>>
+|GET |`/api/v1/admin/applications/{applicationId}/users/{userId}/roles` |<<api-getUserApplicationRoles,人员本应用角色/有效期/维护责任及应用级授权版本>>
+|PUT |`/api/v1/admin/applications/{applicationId}/users/{userId}/roles` |<<api-replaceUserApplicationRoles,确认预览按应用覆盖，审计与版本同事务>>
+|POST |`/api/v1/admin/applications/{applicationId}/users/{userId}/roles/preview` |<<api-previewUserApplicationRoles,预览人员角色集合差异，不追溯裁剪历史合法权限>>
+|GET |`/api/v1/admin/applications/{applicationId}/users/{userId}/effective-permissions` |<<api-getUserEffectivePermissions,只读有效权限、数据范围和角色来源，授予者状态不参与>>
+|GET |`/api/v1/admin/applications/{applicationId}/delegations` |<<api-listApplicationDelegations,平台分页查询应用管理员委派>>
+|POST |`/api/v1/admin/applications/{applicationId}/delegations` |<<api-createApplicationDelegation,平台任命管理员并指定组织/角色/权限上限>>
+|PUT |`/api/v1/admin/applications/{applicationId}/delegations/{delegationId}` |<<api-updateApplicationDelegation,配置更新只影响以后维护和新增授权>>
+|POST |`/api/v1/admin/applications/{applicationId}/delegations/{delegationId}/status` |<<api-changeApplicationDelegationStatus,撤销管理资格仅将维护责任待接管，不撤回其他人的角色>>
+|GET |`/api/v1/admin/applications/{applicationId}/responsibilities/{userId}` |<<api-getUserResponsibility,平台读取人员本应用维护责任>>
+|PUT |`/api/v1/admin/applications/{applicationId}/responsibilities/{userId}` |<<api-setUserResponsibility,平台指定或转交维护责任，旧角色独立生效>>
+|POST |`/api/v1/admin/employees/{id}/assignment-preview` |<<api-previewEmployeeAssignment,平台预览本人全部撤旧/授新及KEEP/RETIRE管理任职>>
+|PUT |`/api/v1/admin/employees/{id}/assignment` |<<api-replaceEmployeeAssignment,原子资料/角色/维护变动，失败全部回滚，他人权限不变>>
+|GET |`/api/v1/auth/effective-permissions` |<<api-getOwnEffectivePermissions,本人按应用读取有效权限/来源，不接受客户端操作者>>
+|GET |`/api/v1/admin/applications/{applicationId}/organizations` |<<api-listApplicationOrganizations,管理范围组织名称目录，仅含必要祖先和获准范围，无人员/计数>>
+|GET |`/api/v1/admin/employees/{id}/account` |<<api-getEmployeeAccount,平台读取指定人员的账号，未建号时返回null>>
+|===
+
+== 操作详情
+
+[[api-health]]
+=== GET /api/v1/health
+
+存活状态，不代表依赖就绪。operationId：`health`。
+
+边界：public；权限：`无独立业务权限码`；CSRF：不需要。
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:object} |服务存活
+|===
+
+契约声明的错误状态：无。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getCsrf]]
+=== GET /api/v1/auth/csrf
+
+获取服务端CSRF令牌，登录和退出后重新获取。operationId：`getCsrf`。
+
+边界：public；权限：`无独立业务权限码`；CSRF：不需要。
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-Csrf,Csrf>>} |CSRF令牌；响应不可缓存
+|===
+
+契约声明的错误状态：503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-login]]
+=== POST /api/v1/auth/login
+
+环境初始化账号登录。operationId：`login`。
+
+边界：public-with-csrf；权限：`无独立业务权限码`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/x-www-form-urlencoded`，必填，对象{username:string，password:string}。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |<<model-AuthenticatedResponse,AuthenticatedResponse>> |登录成功并更新Session ID
+|===
+
+契约声明的错误状态：401、403、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-logout]]
+=== POST /api/v1/auth/logout
+
+撤销当前会话（幂等），保留CSRF校验。operationId：`logout`。
+
+边界：session-logout；权限：`无独立业务权限码`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |<<model-AuthenticatedResponse,AuthenticatedResponse>> |当前会话已撤销
+|===
+
+契约声明的错误状态：403、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getMe]]
+=== GET /api/v1/auth/me
+
+当前服务端主体及实时权限集合。operationId：`getMe`。
+
+边界：authenticated；权限：`无独立业务权限码`；CSRF：不需要。
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-Me,Me>>} |当前身份
+|===
+
+契约声明的错误状态：401、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-adminDemo]]
+=== GET /api/v1/admin/demo
+
+验证管理端统一权限入口。operationId：`adminDemo`。
+
+边界：permission；权限：`admin:console:view`；CSRF：不需要。
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |<<model-DemoResponse,DemoResponse>> |已通过真实权限检查；业务仍为骨架
+|===
+
+契约声明的错误状态：401、403、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-oaDemo]]
+=== GET /api/v1/oa/demo
+
+验证OA统一权限入口，不返回业务记录。operationId：`oaDemo`。
+
+边界：permission；权限：`oa:document:view`；CSRF：不需要。
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |<<model-DemoResponse,DemoResponse>> |已通过真实权限检查；业务仍为骨架
+|===
+
+契约声明的错误状态：401、403、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-pmisDemo]]
+=== GET /api/v1/pmis/demo
+
+验证工程项目统一权限入口，不返回业务记录。operationId：`pmisDemo`。
+
+边界：permission；权限：`pmis:project:view`；CSRF：不需要。
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |<<model-DemoResponse,DemoResponse>> |已通过真实权限检查；业务仍为骨架
+|===
+
+契约声明的错误状态：401、403、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-listOrganizations]]
+=== GET /api/v1/admin/organizations
+
+组织树的平铺节点，当前仅平台管理员。operationId：`listOrganizations`。
+
+边界：平台资格 + 具体动作；权限：`admin:organization:view`；CSRF：不需要。
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:object} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-createOrganization]]
+=== POST /api/v1/admin/organizations
+
+创建唯一根或合法子组织。operationId：`createOrganization`。
+
+边界：平台资格 + 具体动作；权限：`admin:organization:create`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-OrganizationCreate,OrganizationCreate>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|201 |对象{data:<<model-Organization,Organization>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getOrganization]]
+=== GET /api/v1/admin/organizations/{id}
+
+组织详情。operationId：`getOrganization`。
+
+边界：平台资格 + 具体动作；权限：`admin:organization:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-Organization,Organization>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-updateOrganization]]
+=== PUT /api/v1/admin/organizations/{id}
+
+修改名称和负责人，不修改层级/类型。operationId：`updateOrganization`。
+
+边界：平台资格 + 具体动作；权限：`admin:organization:update`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-OrganizationUpdate,OrganizationUpdate>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-Organization,Organization>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-changeOrganizationStatus]]
+=== POST /api/v1/admin/organizations/{id}/status
+
+启停组织；启用子组织/在职员工阻止停用。operationId：`changeOrganizationStatus`。
+
+边界：平台资格 + 具体动作；权限：`admin:organization:status`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-StatusChange,StatusChange>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-Organization,Organization>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-previewOrganizationMove]]
+=== POST /api/v1/admin/organizations/{id}/move-preview
+
+预览移动；已授权人员影响分析待接入则409拒绝。operationId：`previewOrganizationMove`。
+
+边界：平台资格 + 具体动作；权限：`admin:organization:move`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-MovePreviewRequest,MovePreviewRequest>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-MovePreview,MovePreview>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-moveOrganization]]
+=== POST /api/v1/admin/organizations/{id}/move
+
+确认操作者绑定的15分钟移动预览，版本变化409/过期410。operationId：`moveOrganization`。
+
+边界：平台资格 + 具体动作；权限：`admin:organization:move`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-MoveCommit,MoveCommit>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-Organization,Organization>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-listEmployees]]
+=== GET /api/v1/admin/employees
+
+分页人员；当前平台全量，业务管理员拒绝。operationId：`listEmployees`。
+
+边界：平台资格 + 具体动作；权限：`admin:employee:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`page` |query |否 |integer |最小1；默认=1
+|`size` |query |否 |integer |最小1；最大100；默认=20
+|`q` |query |否 |string |最长100；默认=""
+|`sort` |query |否 |string |枚举=id/name；默认="id"
+|`enabled` |query |否 |boolean |—
+|`organizationId` |query |否 |string |格式=^[1-9][0-9]{0,18}$
+|`includeDescendants` |query |否 |boolean |默认=false
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-EmployeePage,EmployeePage>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-createEmployee]]
+=== POST /api/v1/admin/employees
+
+创建人员资料，不自动建号或授权。operationId：`createEmployee`。
+
+边界：平台资格 + 具体动作；权限：`admin:employee:create`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-EmployeeCreate,EmployeeCreate>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|201 |对象{data:<<model-Employee,Employee>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getEmployee]]
+=== GET /api/v1/admin/employees/{id}
+
+人员详情。operationId：`getEmployee`。
+
+边界：平台资格 + 具体动作；权限：`admin:employee:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-Employee,Employee>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-updateEmployee]]
+=== PUT /api/v1/admin/employees/{id}
+
+仅编辑姓名/电话；岗位和组织变动需后续原子换角。operationId：`updateEmployee`。
+
+边界：平台资格 + 具体动作；权限：`admin:employee:update`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-EmployeeUpdate,EmployeeUpdate>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-Employee,Employee>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-changeEmployeeStatus]]
+=== POST /api/v1/admin/employees/{id}/status
+
+离职仅停用本人账号/撤回本人角色；其他用户不变。operationId：`changeEmployeeStatus`。
+
+边界：平台资格 + 具体动作；权限：`admin:employee:status`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-StatusChange,StatusChange>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-Employee,Employee>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-listAccounts]]
+=== GET /api/v1/admin/accounts
+
+分页账号，无密码散列。operationId：`listAccounts`。
+
+边界：平台资格 + 具体动作；权限：`admin:account:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`page` |query |否 |integer |最小1；默认=1
+|`size` |query |否 |integer |最小1；最大100；默认=20
+|`q` |query |否 |string |最长100；默认=""
+|`sort` |query |否 |string |枚举=id/name；默认="id"
+|`enabled` |query |否 |boolean |—
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-ManagedAccountPage,ManagedAccountPage>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-createAccount]]
+=== POST /api/v1/admin/accounts
+
+显式为启用员工建号，一对一，不自动授予角色。operationId：`createAccount`。
+
+边界：平台资格 + 具体动作；权限：`admin:account:create`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccountCreate,AccountCreate>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|201 |对象{data:<<model-TemporaryCredential,TemporaryCredential>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getAccount]]
+=== GET /api/v1/admin/accounts/{id}
+
+账号详情，无密码散列。operationId：`getAccount`。
+
+边界：平台资格 + 具体动作；权限：`admin:account:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-ManagedAccount,ManagedAccount>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-changeAccountStatus]]
+=== POST /api/v1/admin/accounts/{id}/status
+
+启停账号；不得停用最后平台管理员。operationId：`changeAccountStatus`。
+
+边界：平台资格 + 具体动作；权限：`admin:account:status`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-StatusChange,StatusChange>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-ManagedAccount,ManagedAccount>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-resetAccountPassword]]
+=== POST /api/v1/admin/accounts/{id}/password-reset
+
+平台重置临时口令并撤销旧身份。operationId：`resetAccountPassword`。
+
+边界：平台资格 + 具体动作；权限：`admin:account:reset-password`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-PasswordReset,PasswordReset>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-TemporaryCredential,TemporaryCredential>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-changeOwnPassword]]
+=== POST /api/v1/auth/password
+
+本人校验旧口令后改密，撤销全部旧会话，当前会话退出。operationId：`changeOwnPassword`。
+
+边界：authenticated；权限：`无独立业务权限码`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-PasswordChange,PasswordChange>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:object} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-listIdentityAudit]]
+=== GET /api/v1/admin/audit
+
+分页只读管理变更审计，不提供删除或原始秘密。operationId：`listIdentityAudit`。
+
+边界：平台资格 + 具体动作；权限：`admin:audit:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`page` |query |否 |integer |最小1；默认=1
+|`size` |query |否 |integer |最小1；最大100；默认=20
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AuditRecordPage,AuditRecordPage>>} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-listManagedApplications]]
+=== GET /api/v1/admin/managed-applications
+
+当前可管理应用及范围/上限，不按岗位推断。operationId：`listManagedApplications`。
+
+边界：管理控制台资格，返回可管理应用；权限：`admin:application:view`；CSRF：不需要。
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:object} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-listApplicationPermissions]]
+=== GET /api/v1/admin/applications/{applicationId}/permissions
+
+已登记权限只读目录，未实现点不得新授予。operationId：`listApplicationPermissions`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:object} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-listApplicationRoles]]
+=== GET /api/v1/admin/applications/{applicationId}/roles
+
+SQL分页过滤可见通用/本人专用角色。operationId：`listApplicationRoles`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`page` |query |否 |integer |最小1；默认=1
+|`size` |query |否 |integer |最小1；最大100；默认=20
+|`q` |query |否 |string |最长100；默认=""
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessRolePage,AccessRolePage>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-createApplicationRole]]
+=== POST /api/v1/admin/applications/{applicationId}/roles
+
+创建单应用角色，业务管理员仅SCOPED且不自提权。operationId：`createApplicationRole`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:create`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessRoleCreate,AccessRoleCreate>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|201 |对象{data:<<model-AccessRole,AccessRole>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getApplicationRole]]
+=== GET /api/v1/admin/applications/{applicationId}/roles/{roleId}
+
+角色详情及当前可编辑/可分配状态。operationId：`getApplicationRole`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`roleId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessRole,AccessRole>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-updateApplicationRole]]
+=== PUT /api/v1/admin/applications/{applicationId}/roles/{roleId}
+
+覆盖基本信息/人员范围，保留代码和类型。operationId：`updateApplicationRole`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:update`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`roleId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessRoleUpdate,AccessRoleUpdate>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessRole,AccessRole>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-changeApplicationRoleStatus]]
+=== POST /api/v1/admin/applications/{applicationId}/roles/{roleId}/status
+
+角色启停；恢复时校验完整权限和影响。operationId：`changeApplicationRoleStatus`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:status`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`roleId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-StatusChange,StatusChange>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessRole,AccessRole>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-previewRoleOwnerTransfer]]
+=== POST /api/v1/admin/applications/{applicationId}/roles/{roleId}/owner-preview
+
+平台预览专用角色及成员维护责任转交，不裁剪旧权限。operationId：`previewRoleOwnerTransfer`。
+
+边界：平台资格 + 具体动作；权限：`admin:role:transfer`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`roleId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessRoleOwner,AccessRoleOwner>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessPreview,AccessPreview>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-transferRoleOwner]]
+=== PUT /api/v1/admin/applications/{applicationId}/roles/{roleId}/owner
+
+平台确认角色维护责任交接。operationId：`transferRoleOwner`。
+
+边界：平台资格 + 具体动作；权限：`admin:role:transfer`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`roleId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessCommit,AccessCommit>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessRole,AccessRole>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getRolePermissions]]
+=== GET /api/v1/admin/applications/{applicationId}/roles/{roleId}/permissions
+
+角色权限定义及版本。operationId：`getRolePermissions`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`roleId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessRolePermissions,AccessRolePermissions>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-replaceRolePermissions]]
+=== PUT /api/v1/admin/applications/{applicationId}/roles/{roleId}/permissions
+
+确认预览并同事务替换角色权限和审计。operationId：`replaceRolePermissions`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:permissions`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`roleId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessCommit,AccessCommit>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessRolePermissions,AccessRolePermissions>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-previewRolePermissions]]
+=== POST /api/v1/admin/applications/{applicationId}/roles/{roleId}/permissions/preview
+
+预览权限差异，新增/扩大部分受本人权限及平台上限限制。operationId：`previewRolePermissions`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:permissions`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`roleId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessPermissionSet,AccessPermissionSet>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessPreview,AccessPreview>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-listRoleMembers]]
+=== GET /api/v1/admin/applications/{applicationId}/roles/{roleId}/members
+
+SQL分页仅返回可维护人员，不隐藏分页后的越界行。operationId：`listRoleMembers`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:grant:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`roleId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`page` |query |否 |integer |最小1；默认=1
+|`size` |query |否 |integer |最小1；最大100；默认=20
+|`q` |query |否 |string |最长100；默认=""
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessRoleMemberPage,AccessRoleMemberPage>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-addRoleMembers]]
+=== POST /api/v1/admin/applications/{applicationId}/roles/{roleId}/members
+
+最多100人，任一越界整批拒绝。operationId：`addRoleMembers`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:members`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`roleId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessMemberBatch,AccessMemberBatch>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessBatchResult,AccessBatchResult>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-removeRoleMember]]
+=== POST /api/v1/admin/applications/{applicationId}/roles/{roleId}/members/remove
+
+只撤回指定人员的该角色，无关系时幂等成功。operationId：`removeRoleMember`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:members`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`roleId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessMemberRemoval,AccessMemberRemoval>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessUserRoles,AccessUserRoles>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-listManageablePeople]]
+=== GET /api/v1/admin/applications/{applicationId}/people
+
+SQL分页当前可维护人员，无电话/范围外人员。operationId：`listManageablePeople`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:grant:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`page` |query |否 |integer |最小1；默认=1
+|`size` |query |否 |integer |最小1；最大100；默认=20
+|`q` |query |否 |string |最长100；默认=""
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessPersonPage,AccessPersonPage>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getUserApplicationRoles]]
+=== GET /api/v1/admin/applications/{applicationId}/users/{userId}/roles
+
+人员本应用角色/有效期/维护责任及应用级授权版本。operationId：`getUserApplicationRoles`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:grant:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`userId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessUserRoles,AccessUserRoles>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-replaceUserApplicationRoles]]
+=== PUT /api/v1/admin/applications/{applicationId}/users/{userId}/roles
+
+确认预览按应用覆盖，审计与版本同事务。operationId：`replaceUserApplicationRoles`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:grant:update`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`userId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessCommit,AccessCommit>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessUserRoles,AccessUserRoles>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-previewUserApplicationRoles]]
+=== POST /api/v1/admin/applications/{applicationId}/users/{userId}/roles/preview
+
+预览人员角色集合差异，不追溯裁剪历史合法权限。operationId：`previewUserApplicationRoles`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:grant:update`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`userId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessUserRoleSet,AccessUserRoleSet>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessPreview,AccessPreview>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getUserEffectivePermissions]]
+=== GET /api/v1/admin/applications/{applicationId}/users/{userId}/effective-permissions
+
+只读有效权限、数据范围和角色来源，授予者状态不参与。operationId：`getUserEffectivePermissions`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:grant:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`userId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessEffective,AccessEffective>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-listApplicationDelegations]]
+=== GET /api/v1/admin/applications/{applicationId}/delegations
+
+平台分页查询应用管理员委派。operationId：`listApplicationDelegations`。
+
+边界：平台资格 + 具体动作；权限：`admin:delegation:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`page` |query |否 |integer |最小1；默认=1
+|`size` |query |否 |integer |最小1；最大100；默认=20
+|`q` |query |否 |string |最长100；默认=""
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessDelegationPage,AccessDelegationPage>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-createApplicationDelegation]]
+=== POST /api/v1/admin/applications/{applicationId}/delegations
+
+平台任命管理员并指定组织/角色/权限上限。operationId：`createApplicationDelegation`。
+
+边界：平台资格 + 具体动作；权限：`admin:delegation:manage`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessDelegationSet,AccessDelegationSet>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|201 |对象{data:<<model-AccessDelegation,AccessDelegation>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-updateApplicationDelegation]]
+=== PUT /api/v1/admin/applications/{applicationId}/delegations/{delegationId}
+
+配置更新只影响以后维护和新增授权。operationId：`updateApplicationDelegation`。
+
+边界：平台资格 + 具体动作；权限：`admin:delegation:manage`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`delegationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessDelegationSet,AccessDelegationSet>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessDelegation,AccessDelegation>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-changeApplicationDelegationStatus]]
+=== POST /api/v1/admin/applications/{applicationId}/delegations/{delegationId}/status
+
+撤销管理资格仅将维护责任待接管，不撤回其他人的角色。operationId：`changeApplicationDelegationStatus`。
+
+边界：平台资格 + 具体动作；权限：`admin:delegation:manage`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`delegationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-StatusChange,StatusChange>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessDelegation,AccessDelegation>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getUserResponsibility]]
+=== GET /api/v1/admin/applications/{applicationId}/responsibilities/{userId}
+
+平台读取人员本应用维护责任。operationId：`getUserResponsibility`。
+
+边界：平台资格 + 具体动作；权限：`admin:delegation:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`userId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessResponsibility,AccessResponsibility>>（可空）} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-setUserResponsibility]]
+=== PUT /api/v1/admin/applications/{applicationId}/responsibilities/{userId}
+
+平台指定或转交维护责任，旧角色独立生效。operationId：`setUserResponsibility`。
+
+边界：平台资格 + 具体动作；权限：`admin:responsibility:manage`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`userId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessResponsibilitySet,AccessResponsibilitySet>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessResponsibility,AccessResponsibility>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-previewEmployeeAssignment]]
+=== POST /api/v1/admin/employees/{id}/assignment-preview
+
+平台预览本人全部撤旧/授新及KEEP/RETIRE管理任职。operationId：`previewEmployeeAssignment`。
+
+边界：平台资格 + 具体动作；权限：`admin:employee:transfer`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessEmployeeTransfer,AccessEmployeeTransfer>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessPreview,AccessPreview>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-replaceEmployeeAssignment]]
+=== PUT /api/v1/admin/employees/{id}/assignment
+
+原子资料/角色/维护变动，失败全部回滚，他人权限不变。operationId：`replaceEmployeeAssignment`。
+
+边界：平台资格 + 具体动作；权限：`admin:employee:transfer`；CSRF：需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|`X-CSRF-TOKEN` |header |是 |string |—；同一Cookie会话通过GET csrf取得的token
+|===
+
+请求体：`application/json`，必填，<<model-AccessCommit,AccessCommit>>。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessEmployeeTransferResult,AccessEmployeeTransferResult>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getOwnEffectivePermissions]]
+=== GET /api/v1/auth/effective-permissions
+
+本人按应用读取有效权限/来源，不接受客户端操作者。operationId：`getOwnEffectivePermissions`。
+
+边界：authenticated；权限：`无独立业务权限码`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |query |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-AccessEffective,AccessEffective>>} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-listApplicationOrganizations]]
+=== GET /api/v1/admin/applications/{applicationId}/organizations
+
+管理范围组织名称目录，仅含必要祖先和获准范围，无人员/计数。operationId：`listApplicationOrganizations`。
+
+边界：本应用委派/平台资格 + 具体动作 + 服务端范围/责任；权限：`admin:role:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`applicationId` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:object} |成功，当前事实已生效；预览尚未修改授权
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+[[api-getEmployeeAccount]]
+=== GET /api/v1/admin/employees/{id}/account
+
+平台读取指定人员的账号，未建号时返回null。operationId：`getEmployeeAccount`。
+
+边界：平台资格 + 具体动作；权限：`admin:account:view`；CSRF：不需要。
+
+[cols="2,1,1,3,4",options="header"]
+|===
+|参数 |位置 |必填 |类型 |限制/说明
+|`id` |path |是 |string |格式=^[1-9][0-9]{0,18}$
+|===
+
+请求体：无。
+
+[cols="1,4,4",options="header"]
+|===
+|状态 |响应结构 |说明
+|200 |对象{data:<<model-ManagedAccount,ManagedAccount>>（可空）} |成功；临时凭据响应禁止缓存
+|===
+
+契约声明的错误状态：400、401、403、404、409、410、422、429、503。通用含义及恢复方式见06，完整错误结构见Error模型。
+
+== 模型与字段
+
+required与可空是两个维度：必填字段也可能要求显式null。对象默认值、数组元素和更深层嵌套的完整约束仍以OpenAPI为准；这里保留字段类型与主要标量/集合限制，不列凭据示例值。
+
+[[model-Csrf]]
+=== Csrf
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`token` |string |是 |— |服务端返回的预览/CSRF令牌
+|`headerName` |string |是 |枚举=X-CSRF-TOKEN |写请求应携带的CSRF头名
+|===
+
+[[model-Me]]
+=== Me
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`id` |string |是 |格式=^[0-9]+$ |稳定标识
+|`username` |string |是 |— |登录账号
+|`permissions` |数组（string） |是 |— |权限配置/有效权限集合
+|`forcePasswordChange` |boolean |是 |— |是否必须先改密
+|===
+
+[[model-AuthenticatedResponse]]
+=== AuthenticatedResponse
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`data` |object |是 |— |成功响应数据
+|===
+
+[[model-DemoResponse]]
+=== DemoResponse
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`data` |object |是 |— |成功响应数据
+|===
+
+[[model-Error]]
+=== Error
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`code` |string |是 |— |稳定编码
+|`message` |string |是 |— |可理解的结果或错误说明
+|`traceId` |string |是 |— |请求追踪标识
+|`details` |object |否 |— |脱敏事件详情
+|===
+
+[[model-PageMetadata]]
+=== PageMetadata
+
+未来列表接口共享规范，本轮未暴露列表
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`page` |integer |是 |最小1；默认=1 |从1开始的页码
+|`size` |integer |是 |最小1；最大100；默认=20 |页大小
+|`total` |integer |是 |最小0 |总记录数
+|===
+
+[[model-Organization]]
+=== Organization
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`id` |string |是 |格式=^[1-9][0-9]{0,18}$ |稳定标识
+|`code` |string |是 |格式=^[a-z0-9][a-z0-9._-]{2,63}$；最短3；最长64 |稳定编码
+|`name` |string |是 |最短1；最长160 |显示名称
+|`nodeType` |string |是 |枚举=HEADQUARTERS/BRANCH/DEPARTMENT |HEADQUARTERS总公司、BRANCH分公司、DEPARTMENT部门
+|`parentId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |上级组织
+|`managerEmployeeId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |组织负责人，仅资料关联，不产生权限
+|`enabled` |boolean |是 |— |是否启用
+|`version` |integer |是 |format=int64；最小0；最大9007199254740991 |当前版本
+|===
+
+[[model-OrganizationCreate]]
+=== OrganizationCreate
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`code` |string |是 |格式=^[a-z0-9][a-z0-9._-]{2,63}$；最短3；最长64 |稳定编码
+|`name` |string |是 |最短1；最长160 |显示名称
+|`nodeType` |string |是 |枚举=HEADQUARTERS/BRANCH/DEPARTMENT |HEADQUARTERS总公司、BRANCH分公司、DEPARTMENT部门
+|`parentId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |上级组织
+|===
+
+[[model-OrganizationUpdate]]
+=== OrganizationUpdate
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`name` |string |是 |最短1；最长160 |显示名称
+|`managerEmployeeId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |组织负责人，仅资料关联，不产生权限
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|===
+
+[[model-StatusChange]]
+=== StatusChange
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`enabled` |boolean |是 |— |是否启用
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|===
+
+[[model-MovePreviewRequest]]
+=== MovePreviewRequest
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`parentId` |string |是 |格式=^[1-9][0-9]{0,18}$ |上级组织
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|===
+
+[[model-MovePreview]]
+=== MovePreview
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`token` |string |是 |format=uuid |服务端返回的预览/CSRF令牌
+|`organizationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |组织标识
+|`parentId` |string |是 |格式=^[1-9][0-9]{0,18}$ |上级组织
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|`treeVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |预览绑定的组织目录版本
+|`affectedEmployees` |integer |是 |最小0 |组织移动影响人数
+|`expiresAt` |string |是 |format=date-time |预览过期时刻
+|===
+
+[[model-MoveCommit]]
+=== MoveCommit
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`previewToken` |string |是 |format=uuid |本次预览实际返回值
+|===
+
+[[model-Employee]]
+=== Employee
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`id` |string |是 |格式=^[1-9][0-9]{0,18}$ |稳定标识
+|`employeeCode` |string |是 |格式=^[a-z0-9][a-z0-9._-]{2,63}$；最短3；最长64 |稳定人员编码
+|`displayName` |string |是 |最短1；最长100 |人员显示名
+|`organizationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |组织标识
+|`positionName` |string（可空） |是 |最长100 |岗位资料，不自动授权
+|`phone` |string（可空） |是 |最长32 |联系电话，敏感资料
+|`enabled` |boolean |是 |— |是否启用
+|`version` |integer |是 |format=int64；最小0；最大9007199254740991 |当前版本
+|===
+
+[[model-EmployeeCreate]]
+=== EmployeeCreate
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`employeeCode` |string |是 |格式=^[a-z0-9][a-z0-9._-]{2,63}$；最短3；最长64 |稳定人员编码
+|`displayName` |string |是 |最短1；最长100 |人员显示名
+|`organizationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |组织标识
+|`positionName` |string（可空） |是 |最长100 |岗位资料，不自动授权
+|`phone` |string（可空） |是 |最长32 |联系电话，敏感资料
+|===
+
+[[model-EmployeeUpdate]]
+=== EmployeeUpdate
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`displayName` |string |是 |最短1；最长100 |人员显示名
+|`phone` |string（可空） |是 |最长32 |联系电话，敏感资料
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|===
+
+[[model-ManagedAccount]]
+=== ManagedAccount
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`id` |string |是 |格式=^[1-9][0-9]{0,18}$ |稳定标识
+|`username` |string |是 |格式=^[a-z0-9][a-z0-9._-]{2,63}$；最短3；最长64 |登录账号
+|`employeeId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |人员标识
+|`enabled` |boolean |是 |— |是否启用
+|`forcePasswordChange` |boolean |是 |— |是否必须先改密
+|`version` |integer |是 |format=int64；最小0；最大9007199254740991 |当前版本
+|===
+
+[[model-AccountCreate]]
+=== AccountCreate
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`username` |string |是 |格式=^[a-z0-9][a-z0-9._-]{2,63}$；最短3；最长64 |登录账号
+|`employeeId` |string |是 |格式=^[1-9][0-9]{0,18}$ |人员标识
+|===
+
+[[model-TemporaryCredential]]
+=== TemporaryCredential
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`account` |<<model-ManagedAccount,ManagedAccount>> |是 |— |账号视图，不包含密码散列
+|`temporaryPassword` |string |是 |format=password |仅此响应显示一次；不写审计或日志。demo为1234且不强制改密，正常环境随机强口令并强制改密。
+|===
+
+[[model-PasswordReset]]
+=== PasswordReset
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|===
+
+[[model-PasswordChange]]
+=== PasswordChange
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`currentPassword` |string |是 |format=password；最短1；最长72 |旧口令
+|`newPassword` |string |是 |format=password；最短12；最长72 |至少12字符，最多72个UTF-8字节，且不能与旧密码相同；旧密码不受新策略拒绝。
+|===
+
+[[model-AuditRecord]]
+=== AuditRecord
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`id` |string |是 |格式=^[1-9][0-9]{0,18}$ |稳定标识
+|`actorUserId` |string |是 |格式=^[1-9][0-9]{0,18}$ |服务端记录的操作者账号标识
+|`action` |string |是 |最短1；最长80 |管理事件动作
+|`targetType` |string |是 |最短1；最长32 |操作目标类型
+|`targetId` |string |是 |格式=^[1-9][0-9]{0,18}$ |操作目标标识
+|`beforeState` |object（可空） |是 |— |变更前状态
+|`afterState` |object（可空） |是 |— |变更后状态
+|`traceId` |string |是 |最短1；最长64 |请求追踪标识
+|`createdAt` |string |是 |format=date-time |UTC创建时刻
+|===
+
+[[model-OrganizationPage]]
+=== OrganizationPage
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`items` |数组（<<model-Organization,Organization>>） |是 |— |本页记录
+|`page` |integer |是 |最小1 |从1开始的页码
+|`size` |integer |是 |最小1；最大100 |页大小
+|`total` |integer |是 |format=int64；最小0 |总记录数
+|===
+
+[[model-EmployeePage]]
+=== EmployeePage
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`items` |数组（<<model-Employee,Employee>>） |是 |— |本页记录
+|`page` |integer |是 |最小1 |从1开始的页码
+|`size` |integer |是 |最小1；最大100 |页大小
+|`total` |integer |是 |format=int64；最小0 |总记录数
+|===
+
+[[model-ManagedAccountPage]]
+=== ManagedAccountPage
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`items` |数组（<<model-ManagedAccount,ManagedAccount>>） |是 |— |本页记录
+|`page` |integer |是 |最小1 |从1开始的页码
+|`size` |integer |是 |最小1；最大100 |页大小
+|`total` |integer |是 |format=int64；最小0 |总记录数
+|===
+
+[[model-AuditRecordPage]]
+=== AuditRecordPage
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`items` |数组（<<model-AuditRecord,AuditRecord>>） |是 |— |本页记录
+|`page` |integer |是 |最小1 |从1开始的页码
+|`size` |integer |是 |最小1；最大100 |页大小
+|`total` |integer |是 |format=int64；最小0 |总记录数
+|===
+
+[[model-AccessScope]]
+=== AccessScope
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`kind` |string |是 |枚举=SELF/ORG/ORG_SUBTREE/ALL |类型
+|`organizationIds` |数组（string） |是 |最多100项 |组织节点集合
+|===
+
+[[model-AccessOrganizationRule]]
+=== AccessOrganizationRule
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`organizationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |组织标识
+|`includeDescendants` |boolean |是 |— |是否包含下级
+|===
+
+[[model-AccessPeopleScope]]
+=== AccessPeopleScope
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`allCompany` |boolean |是 |— |明确全公司人员范围
+|`organizations` |数组（<<model-AccessOrganizationRule,AccessOrganizationRule>>） |是 |最多100项 |人员组织范围及各节点包含下级标志
+|===
+
+[[model-AccessPermission]]
+=== AccessPermission
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`id` |string |是 |格式=^[1-9][0-9]{0,18}$ |稳定标识
+|`applicationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |应用标识
+|`code` |string |是 |最短1；最长128 |稳定编码
+|`name` |string |是 |最短1；最长100 |显示名称
+|`enabled` |boolean |是 |— |是否启用
+|`implementationStatus` |string |是 |枚举=IMPLEMENTED/PLANNED |仅IMPLEMENTED且启用的点可新授
+|===
+
+[[model-AccessPermissionGrant]]
+=== AccessPermissionGrant
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`permissionId` |string |是 |格式=^[1-9][0-9]{0,18}$ |权限标识
+|`scope` |<<model-AccessScope,AccessScope>> |是 |— |业务数据范围
+|`validFrom` |string（可空） |否 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`validTo` |string（可空） |否 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|===
+
+[[model-AccessPermissionView]]
+=== AccessPermissionView
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`permission` |<<model-AccessPermission,AccessPermission>> |是 |— |权限目录视图
+|`scope` |<<model-AccessScope,AccessScope>> |是 |— |业务数据范围
+|`validFrom` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`validTo` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|===
+
+[[model-AccessRoleCreate]]
+=== AccessRoleCreate
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`code` |string |是 |最短3；最长64 |稳定编码
+|`name` |string |是 |最短1；最长100 |显示名称
+|`kind` |string |是 |枚举=PLATFORM/COMMON/SCOPED |类型
+|`ownerUserId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |专用角色维护人
+|`personnelScope` |<<model-AccessPeopleScope,AccessPeopleScope>> |是 |— |角色人员适用范围
+|===
+
+[[model-AccessRoleUpdate]]
+=== AccessRoleUpdate
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`name` |string |是 |最短1；最长100 |显示名称
+|`personnelScope` |<<model-AccessPeopleScope,AccessPeopleScope>> |是 |— |角色人员适用范围
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|===
+
+[[model-AccessRole]]
+=== AccessRole
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`id` |string |是 |格式=^[1-9][0-9]{0,18}$ |稳定标识
+|`applicationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |应用标识
+|`code` |string |是 |最短1；最长64 |稳定编码
+|`name` |string |是 |最短1；最长100 |显示名称
+|`kind` |string |是 |枚举=PLATFORM/COMMON/SCOPED/LEGACY |类型
+|`ownerUserId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |专用角色维护人
+|`enabled` |boolean |是 |— |是否启用
+|`version` |integer |是 |format=int64；最小0；最大9007199254740991 |当前版本
+|`personnelScope` |<<model-AccessPeopleScope,AccessPeopleScope>> |是 |— |角色人员适用范围
+|`canEdit` |boolean |是 |— |服务端当前是否允许编辑
+|`canAssign` |boolean |是 |— |服务端当前是否允许分配
+|`memberCount` |integer |是 |最小0 |当前成员关系数
+|===
+
+[[model-AccessRolePermissions]]
+=== AccessRolePermissions
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`roleId` |string |是 |格式=^[1-9][0-9]{0,18}$ |角色标识
+|`version` |integer |是 |format=int64；最小0；最大9007199254740991 |当前版本
+|`permissions` |数组（<<model-AccessPermissionView,AccessPermissionView>>） |是 |最多2000项 |权限配置/有效权限集合
+|===
+
+[[model-AccessPermissionSet]]
+=== AccessPermissionSet
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|`permissions` |数组（<<model-AccessPermissionGrant,AccessPermissionGrant>>） |是 |最多2000项 |权限配置/有效权限集合
+|===
+
+[[model-AccessPreview]]
+=== AccessPreview
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`token` |string |是 |format=uuid |服务端返回的预览/CSRF令牌
+|`kind` |string |是 |枚举=ROLE_PERMISSIONS/USER_ROLES/ROLE_OWNER/EMPLOYEE_TRANSFER |类型
+|`targetId` |string |是 |格式=^[1-9][0-9]{0,18}$ |操作目标标识
+|`applicationId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |应用标识
+|`targetVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |预览绑定的目标版本
+|`treeVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |预览绑定的组织目录版本
+|`namespaceVersions` |object |是 |— |预览依赖的应用授权空间版本
+|`affectedUsers` |integer |是 |最小0 |影响人数
+|`expiresAt` |string |是 |format=date-time |预览过期时刻
+|`beforeState` |object |是 |— |变更前状态
+|`afterState` |object |是 |— |变更后状态
+|===
+
+[[model-AccessCommit]]
+=== AccessCommit
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`previewToken` |string |是 |format=uuid |本次预览实际返回值
+|===
+
+[[model-AccessRoleOwner]]
+=== AccessRoleOwner
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|`newAdministratorUserId` |string |是 |格式=^[1-9][0-9]{0,18}$ |交接接任管理员
+|===
+
+[[model-AccessMembershipInput]]
+=== AccessMembershipInput
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`roleId` |string |是 |格式=^[1-9][0-9]{0,18}$ |角色标识
+|`validFrom` |string（可空） |否 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`validTo` |string（可空） |否 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|===
+
+[[model-AccessMembership]]
+=== AccessMembership
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`roleId` |string |是 |格式=^[1-9][0-9]{0,18}$ |角色标识
+|`roleName` |string |是 |最短1；最长100 |角色显示名
+|`kind` |string |是 |枚举=PLATFORM/COMMON/SCOPED/LEGACY |类型
+|`enabled` |boolean |是 |— |是否启用
+|`validFrom` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`validTo` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`grantedByUserId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |历史授予者；其后续状态不参与目标授权生效
+|`grantedAt` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|===
+
+[[model-AccessUserRoleSet]]
+=== AccessUserRoleSet
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|`memberships` |数组（<<model-AccessMembershipInput,AccessMembershipInput>>） |是 |最多100项 |该应用的新完整角色集合
+|===
+
+[[model-AccessResponsibility]]
+=== AccessResponsibility
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`applicationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |应用标识
+|`userId` |string |是 |格式=^[1-9][0-9]{0,18}$ |目标账号标识，不是操作者
+|`delegationId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |人员维护责任委派
+|`state` |string |是 |枚举=CURRENT/AWAITING |人员维护责任状态CURRENT/AWAITING等契约枚举
+|`version` |integer |是 |format=int64；最小0；最大9007199254740991 |当前版本
+|===
+
+[[model-AccessResponsibilitySet]]
+=== AccessResponsibilitySet
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`delegationId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |人员维护责任委派
+|`expectedVersion` |integer（可空） |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|===
+
+[[model-AccessUserRoles]]
+=== AccessUserRoles
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`applicationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |应用标识
+|`userId` |string |是 |格式=^[1-9][0-9]{0,18}$ |目标账号标识，不是操作者
+|`version` |integer |是 |format=int64；最小0；最大9007199254740991 |当前版本
+|`memberships` |数组（<<model-AccessMembership,AccessMembership>>） |是 |最多2000项 |该应用的新完整角色集合
+|`responsibility` |<<model-AccessResponsibility,AccessResponsibility>>（可空） |是 |— |维护责任，不影响员工已有授权生效
+|===
+
+[[model-AccessMemberInput]]
+=== AccessMemberInput
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`userId` |string |是 |格式=^[1-9][0-9]{0,18}$ |目标账号标识，不是操作者
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|`validFrom` |string（可空） |否 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`validTo` |string（可空） |否 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|===
+
+[[model-AccessMemberBatch]]
+=== AccessMemberBatch
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|`members` |数组（<<model-AccessMemberInput,AccessMemberInput>>） |是 |至少1项；最多100项 |批量目标人员与各自版本/有效期
+|===
+
+[[model-AccessMemberRemoval]]
+=== AccessMemberRemoval
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`userId` |string |是 |格式=^[1-9][0-9]{0,18}$ |目标账号标识，不是操作者
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|`expectedUserVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |人员+应用授权版本
+|===
+
+[[model-AccessBatchResult]]
+=== AccessBatchResult
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`roleId` |string |是 |格式=^[1-9][0-9]{0,18}$ |角色标识
+|`affectedUsers` |integer |是 |最小0 |影响人数
+|`users` |数组（object） |是 |最多100项 |本次受影响账号及新版本
+|===
+
+[[model-AccessPerson]]
+=== AccessPerson
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`userId` |string |是 |格式=^[1-9][0-9]{0,18}$ |目标账号标识，不是操作者
+|`username` |string |是 |最短1；最长64 |登录账号
+|`employeeId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |人员标识
+|`displayName` |string |是 |最短1；最长100 |人员显示名
+|`organizationId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |组织标识
+|`enabled` |boolean |是 |— |是否启用
+|`grantVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |人员+应用授权版本
+|`responsibility` |<<model-AccessResponsibility,AccessResponsibility>>（可空） |是 |— |维护责任，不影响员工已有授权生效
+|===
+
+[[model-AccessRoleMember]]
+=== AccessRoleMember
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`userId` |string |是 |格式=^[1-9][0-9]{0,18}$ |目标账号标识，不是操作者
+|`username` |string |是 |最短1；最长64 |登录账号
+|`roleId` |string |是 |格式=^[1-9][0-9]{0,18}$ |角色标识
+|`validFrom` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`validTo` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`grantedByUserId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |历史授予者；其后续状态不参与目标授权生效
+|`grantedAt` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`grantVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |人员+应用授权版本
+|===
+
+[[model-AccessCeiling]]
+=== AccessCeiling
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`permissionId` |string |是 |格式=^[1-9][0-9]{0,18}$ |权限标识
+|`scope` |<<model-AccessScope,AccessScope>> |是 |— |业务数据范围
+|===
+
+[[model-AccessDelegationSet]]
+=== AccessDelegationSet
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`administratorUserId` |string |是 |格式=^[1-9][0-9]{0,18}$ |被委派管理员
+|`enabled` |boolean |是 |— |是否启用
+|`validFrom` |string（可空） |否 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`validTo` |string（可空） |否 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`peopleScope` |<<model-AccessPeopleScope,AccessPeopleScope>> |是 |— |委派人员管理范围
+|`commonRoleIds` |数组（string） |是 |最多2000项 |可授通用角色白名单
+|`permissionCeilings` |数组（<<model-AccessCeiling,AccessCeiling>>） |是 |最多2000项 |平台指定权限与范围上限
+|`expectedVersion` |integer（可空） |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|===
+
+[[model-AccessDelegation]]
+=== AccessDelegation
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`id` |string |是 |格式=^[1-9][0-9]{0,18}$ |稳定标识
+|`applicationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |应用标识
+|`administratorUserId` |string |是 |格式=^[1-9][0-9]{0,18}$ |被委派管理员
+|`enabled` |boolean |是 |— |是否启用
+|`validFrom` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`validTo` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`peopleScope` |<<model-AccessPeopleScope,AccessPeopleScope>> |是 |— |委派人员管理范围
+|`commonRoleIds` |数组（string） |是 |最多2000项 |可授通用角色白名单
+|`permissionCeilings` |数组（<<model-AccessCeiling,AccessCeiling>>） |是 |最多2000项 |平台指定权限与范围上限
+|`version` |integer |是 |format=int64；最小0；最大9007199254740991 |当前版本
+|===
+
+[[model-AccessCapabilities]]
+=== AccessCapabilities
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`all` |boolean |是 |— |是否包含本应用全部数据范围
+|`self` |boolean |是 |— |是否包含目标本人记录范围
+|`organizationIds` |数组（string） |是 |最多50000项 |组织节点集合
+|`subtreeRootIds` |数组（string） |是 |最多50000项 |业务数据子树根节点集合
+|===
+
+[[model-AccessApplication]]
+=== AccessApplication
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`id` |string |是 |格式=^[1-9][0-9]{0,18}$ |稳定标识
+|`code` |string |是 |最短1；最长32 |稳定编码
+|`name` |string |是 |最短1；最长100 |显示名称
+|`version` |integer |是 |format=int64；最小0；最大9007199254740991 |当前版本
+|`platform` |boolean |是 |— |当前应用管理视图是否为平台身份
+|`delegation` |<<model-AccessDelegation,AccessDelegation>>（可空） |是 |— |当前应用管理委派，可空
+|`allowedOperations` |数组（string） |是 |最多100项 |服务端当前允许的管理动作
+|`delegablePermissions` |数组（object） |是 |最多2000项 |当前本人权限与平台上限交集
+|===
+
+[[model-AccessEffectiveSource]]
+=== AccessEffectiveSource
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`roleId` |string |是 |格式=^[1-9][0-9]{0,18}$ |角色标识
+|`permissionId` |string |是 |格式=^[1-9][0-9]{0,18}$ |权限标识
+|`code` |string |是 |最短1；最长128 |稳定编码
+|`scope` |<<model-AccessScope,AccessScope>> |是 |— |业务数据范围
+|`validFrom` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`validTo` |string（可空） |是 |format=date-time |UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+|`grantedByUserId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |历史授予者；其后续状态不参与目标授权生效
+|`legacy` |boolean |是 |— |是否为历史引导来源
+|===
+
+[[model-AccessEffective]]
+=== AccessEffective
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`userId` |string |是 |格式=^[1-9][0-9]{0,18}$ |目标账号标识，不是操作者
+|`applicationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |应用标识
+|`permissions` |数组（object） |是 |最多2000项 |权限配置/有效权限集合
+|`sources` |数组（<<model-AccessEffectiveSource,AccessEffectiveSource>>） |是 |最多20000项 |有效权限来源
+|===
+
+[[model-AccessTransferApplication]]
+=== AccessTransferApplication
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`applicationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |应用标识
+|`memberships` |数组（<<model-AccessMembershipInput,AccessMembershipInput>>） |是 |最多100项 |该应用的新完整角色集合
+|`responsibilityDelegationId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |该应用新人员维护责任委派，可空
+|===
+
+[[model-AccessEmployeeTransfer]]
+=== AccessEmployeeTransfer
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`expectedVersion` |integer |是 |format=int64；最小0；最大9007199254740991 |提交前读取的版本；具体版本对象见06
+|`expectedAccountVersion` |integer（可空） |是 |format=int64；最小0；最大9007199254740991 |账号对象版本
+|`organizationId` |string |是 |格式=^[1-9][0-9]{0,18}$ |组织标识
+|`positionName` |string（可空） |是 |最长100 |岗位资料，不自动授权
+|`managementAction` |string |是 |枚举=KEEP/RETIRE |KEEP保留或RETIRE撤任
+|`applications` |数组（<<model-AccessTransferApplication,AccessTransferApplication>>） |是 |最多100项 |逐应用明确的新授权集合
+|===
+
+[[model-AccessEmployeeTransferResult]]
+=== AccessEmployeeTransferResult
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`employee` |<<model-Employee,Employee>> |是 |— |人员视图
+|`userId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |目标账号标识，不是操作者
+|`applications` |数组（<<model-AccessUserRoles,AccessUserRoles>>） |是 |最多100项 |逐应用明确的新授权集合
+|===
+
+[[model-AccessRolePage]]
+=== AccessRolePage
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`items` |数组（<<model-AccessRole,AccessRole>>） |是 |最多100项 |本页记录
+|`page` |integer |是 |最小1 |从1开始的页码
+|`size` |integer |是 |最小1；最大100 |页大小
+|`total` |integer |是 |format=int64；最小0 |总记录数
+|===
+
+[[model-AccessRoleMemberPage]]
+=== AccessRoleMemberPage
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`items` |数组（<<model-AccessRoleMember,AccessRoleMember>>） |是 |最多100项 |本页记录
+|`page` |integer |是 |最小1 |从1开始的页码
+|`size` |integer |是 |最小1；最大100 |页大小
+|`total` |integer |是 |format=int64；最小0 |总记录数
+|===
+
+[[model-AccessPersonPage]]
+=== AccessPersonPage
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`items` |数组（<<model-AccessPerson,AccessPerson>>） |是 |最多100项 |本页记录
+|`page` |integer |是 |最小1 |从1开始的页码
+|`size` |integer |是 |最小1；最大100 |页大小
+|`total` |integer |是 |format=int64；最小0 |总记录数
+|===
+
+[[model-AccessDelegationPage]]
+=== AccessDelegationPage
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`items` |数组（<<model-AccessDelegation,AccessDelegation>>） |是 |最多100项 |本页记录
+|`page` |integer |是 |最小1 |从1开始的页码
+|`size` |integer |是 |最小1；最大100 |页大小
+|`total` |integer |是 |format=int64；最小0 |总记录数
+|===
+
+[[model-AccessOrganizationChoice]]
+=== AccessOrganizationChoice
+
+[cols="2,3,1,4,4",options="header"]
+|===
+|字段 |类型 |必填 |限制 |用途
+|`id` |string |是 |格式=^[1-9][0-9]{0,18}$ |稳定标识
+|`code` |string |是 |— |稳定编码
+|`name` |string |是 |— |显示名称
+|`parentId` |string（可空） |是 |格式=^[1-9][0-9]{0,18}$ |上级组织
+|`nodeType` |string |是 |枚举=HEADQUARTERS/BRANCH/DEPARTMENT |HEADQUARTERS总公司、BRANCH分公司、DEPARTMENT部门
+|`enabled` |boolean |是 |— |是否启用
+|`peopleSelectable` |boolean |是 |— |可作为人员管理范围节点
+|`peopleSubtreeAllowed` |boolean |是 |— |该人员节点是否允许包含下级
+|===

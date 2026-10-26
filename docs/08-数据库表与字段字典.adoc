@@ -1,0 +1,557 @@
+// 自动生成：scripts/schema_docs.py；字段与约束来自Flyway，禁止手工改生成结果。
+= 数据库表与字段字典
+:toc: left
+:toclevels: 1
+
+当前24张业务表，不含Flyway历史表。设计与表职责见link:07-数据库设计说明.adoc[07]。默认/生成值、注释及约束从迁移解析；可执行DDL仍以迁移为准。
+
+== id_organization
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |组织标识
+|`code` |`VARCHAR(64)` |否 |— |不可复用的组织编码
+|`name` |`VARCHAR(160)` |否 |— |组织名称，不作为关联键
+|`node_type` |`VARCHAR(20)` |否 |— |HEADQUARTERS/BRANCH/DEPARTMENT
+|`parent_id` |`BIGINT` |是 |— |父组织，根节点为空
+|`enabled` |`BOOLEAN` |否 |TRUE |是否启用
+|`version` |`BIGINT` |否 |0 |覆盖更新版本
+|`created_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC创建时间
+|`name_key` |`VARCHAR(160)` |否 |'' |规范名称比较键，显示名保持原文
+|`parent_key` |`BIGINT` |是 |生成：COALESCE(parent_id,0) |根父域的非空唯一键
+|`root_key` |`INT` |是 |生成：IF(parent_id IS NULL,1,NULL) |最多一个行政根
+|`manager_employee_id` |`BIGINT` |是 |— |负责人资料，不产生角色
+|`updated_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC更新时间
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (id)
+CONSTRAINT uk_org_code UNIQUE (code)
+CONSTRAINT fk_org_parent FOREIGN KEY (parent_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+CONSTRAINT ck_org_type CHECK (node_type IN ('HEADQUARTERS','BRANCH','DEPARTMENT'))
+INDEX ix_org_parent (parent_id, enabled, id)
+CONSTRAINT uk_org_sibling UNIQUE (parent_key,name_key)
+CONSTRAINT uk_org_root UNIQUE (root_key)
+CONSTRAINT ck_org_root_type CHECK ((node_type='HEADQUARTERS' AND parent_id IS NULL) OR (node_type<>'HEADQUARTERS' AND parent_id IS NOT NULL))
+CONSTRAINT fk_org_manager FOREIGN KEY (manager_employee_id) REFERENCES id_employee(id) ON DELETE RESTRICT
+----
+
+== id_employee
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |员工标识
+|`employee_code` |`VARCHAR(64)` |否 |— |导入时分配的稳定员工编码
+|`display_name` |`VARCHAR(100)` |否 |— |姓名，不能唯一匹配负责人
+|`organization_id` |`BIGINT` |否 |— |主要组织，可直接是分公司
+|`position_name` |`VARCHAR(100)` |是 |— |岗位资料，不自动授予角色
+|`phone` |`VARCHAR(32)` |是 |— |电话字符串，仅授权人员可读
+|`enabled` |`BOOLEAN` |否 |TRUE |人员是否在职启用
+|`created_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC创建时间
+|`version` |`BIGINT` |否 |0 |资料覆盖更新版本
+|`updated_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC更新时间
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (id)
+CONSTRAINT uk_employee_code UNIQUE (employee_code)
+CONSTRAINT fk_employee_org FOREIGN KEY (organization_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+INDEX ix_employee_org (organization_id, enabled, id)
+----
+
+== id_user
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |登录主体标识，JSON用十进制字符串
+|`username` |`VARCHAR(64)` |否 |— |小写规范账号，编码永不复用
+|`password_hash` |`VARCHAR(100)` |否 |— |BCrypt散列，不可输出
+|`employee_id` |`BIGINT` |是 |— |最多一对一员工；引导管理员可为空
+|`enabled` |`BOOLEAN` |否 |TRUE |账号可用状态
+|`auth_version` |`BIGINT` |否 |0 |改密或停用增加，旧会话请求撤销
+|`grant_version` |`BIGINT` |否 |0 |未来用户角色覆盖更新版本
+|`created_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC创建时间
+|`version` |`BIGINT` |否 |0 |账号管理覆盖更新版本
+|`force_password_change` |`BOOLEAN` |否 |FALSE |正式临时口令须先改密
+|`updated_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC更新时间
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (id)
+CONSTRAINT uk_user_username UNIQUE (username)
+CONSTRAINT uk_user_employee UNIQUE (employee_id)
+CONSTRAINT fk_user_employee FOREIGN KEY (employee_id) REFERENCES id_employee(id) ON DELETE RESTRICT
+----
+
+== auth_application
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |应用标识
+|`code` |`VARCHAR(32)` |否 |— |admin/oa/pmis等唯一编码
+|`name` |`VARCHAR(100)` |否 |— |应用展示名称
+|`enabled` |`BOOLEAN` |否 |TRUE |应用停用则不授予权限
+|`version` |`BIGINT` |否 |0 |未来应用配置版本
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (id)
+CONSTRAINT uk_app_code UNIQUE (code)
+----
+
+== auth_role
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |角色标识，与组织层级无关
+|`code` |`VARCHAR(64)` |否 |— |唯一且不复用的角色编码
+|`name` |`VARCHAR(100)` |否 |— |角色展示名称
+|`enabled` |`BOOLEAN` |否 |TRUE |停用角色不得参与计算
+|`version` |`BIGINT` |否 |0 |角色权限覆盖更新版本
+|`application_id` |`BIGINT` |是 |— |LEGACY为空；普通角色只属于一个应用
+|`kind` |`VARCHAR(12)` |否 |'LEGACY' |PLATFORM/COMMON/SCOPED/LEGACY
+|`owner_user_id` |`BIGINT` |是 |— |专用角色维护人，不参与成员运行时授权
+|`personnel_all` |`BOOLEAN` |否 |TRUE |人员适用范围为全公司
+|`name_key` |`VARCHAR(100)` |是 |— |规范名称，应用和维护人内唯一
+|`app_key` |`BIGINT` |是 |生成：COALESCE(application_id,0) |—
+|`owner_key` |`BIGINT` |是 |生成：COALESCE(owner_user_id,0) |—
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (id)
+CONSTRAINT uk_role_code UNIQUE (code)
+CONSTRAINT fk_role_application FOREIGN KEY(application_id) REFERENCES auth_application(id) ON DELETE RESTRICT
+CONSTRAINT fk_role_owner FOREIGN KEY(owner_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+CONSTRAINT uk_role_name UNIQUE(app_key,owner_key,name_key)
+CONSTRAINT ck_role_kind CHECK ((kind='LEGACY' AND application_id IS NULL AND owner_user_id IS NULL) OR (kind='PLATFORM' AND application_id=1 AND owner_user_id IS NULL) OR (kind='COMMON' AND application_id<>1 AND application_id IS NOT NULL AND owner_user_id IS NULL) OR (kind='SCOPED' AND application_id<>1 AND application_id IS NOT NULL AND owner_user_id IS NOT NULL))
+----
+
+== auth_permission
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |权限标识
+|`application_id` |`BIGINT` |否 |— |所属应用，禁止跨应用误用
+|`code` |`VARCHAR(128)` |否 |— |应用:资源:动作，唯一且不复用
+|`name` |`VARCHAR(100)` |否 |— |功能展示名，父目录不隐式授权
+|`enabled` |`BOOLEAN` |否 |TRUE |是否参与计算
+|`implementation_status` |`VARCHAR(16)` |否 |'IMPLEMENTED' |仅实现权限允许新增授予
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (id)
+CONSTRAINT uk_permission_code UNIQUE (code)
+CONSTRAINT fk_permission_app FOREIGN KEY (application_id) REFERENCES auth_application(id) ON DELETE RESTRICT
+INDEX ix_permission_app (application_id, enabled, id)
+CONSTRAINT ck_permission_implementation CHECK(implementation_status IN ('IMPLEMENTED','PLANNED'))
+----
+
+== auth_user_role
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`user_id` |`BIGINT` |否 |— |主体标识
+|`role_id` |`BIGINT` |否 |— |角色标识
+|`valid_from` |`DATETIME(3)` |是 |— |UTC开始含边界，NULL无开始限制
+|`valid_to` |`DATETIME(3)` |是 |— |UTC结束不含边界，NULL无结束限制
+|`granted_by` |`BIGINT` |是 |— |历史未知为空；授予人后续状态不参与计算
+|`granted_at` |`DATETIME(3)` |是 |— |本次新授/扩大时间，不改写保留关系
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (user_id, role_id)
+CONSTRAINT fk_ur_user FOREIGN KEY (user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+CONSTRAINT fk_ur_role FOREIGN KEY (role_id) REFERENCES auth_role(id) ON DELETE RESTRICT
+CONSTRAINT ck_ur_time CHECK (valid_from IS NULL OR valid_to IS NULL OR valid_from < valid_to)
+INDEX ix_ur_role (role_id, user_id)
+CONSTRAINT fk_ur_grantor FOREIGN KEY(granted_by) REFERENCES id_user(id) ON DELETE RESTRICT
+----
+
+== auth_role_permission
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`role_id` |`BIGINT` |否 |— |角色标识
+|`permission_id` |`BIGINT` |否 |— |权限标识
+|`valid_from` |`DATETIME(3)` |是 |— |UTC开始含边界，NULL无开始限制
+|`valid_to` |`DATETIME(3)` |是 |— |UTC结束不含边界，NULL无结束限制
+|`scope_kind` |`VARCHAR(16)` |否 |'ALL' |SELF/ORG/ORG_SUBTREE/ALL
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (role_id, permission_id)
+CONSTRAINT fk_rp_role FOREIGN KEY (role_id) REFERENCES auth_role(id) ON DELETE RESTRICT
+CONSTRAINT fk_rp_permission FOREIGN KEY (permission_id) REFERENCES auth_permission(id) ON DELETE RESTRICT
+CONSTRAINT ck_rp_time CHECK (valid_from IS NULL OR valid_to IS NULL OR valid_from < valid_to)
+INDEX ix_rp_permission (permission_id, role_id)
+CONSTRAINT ck_rp_scope CHECK(scope_kind IN ('SELF','ORG','ORG_SUBTREE','ALL'))
+----
+
+== id_directory_guard
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`INT` |否 |— |1组织目录，2最后平台管理员保护
+|`version` |`BIGINT` |否 |0 |结构快照版本
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (id)
+----
+
+== id_organization_path
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`ancestor_id` |`BIGINT` |否 |— |祖先，含自身
+|`descendant_id` |`BIGINT` |否 |— |后代，含自身
+|`depth` |`INT` |否 |— |自身0，最多7条边
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (ancestor_id,descendant_id)
+CONSTRAINT fk_path_ancestor FOREIGN KEY (ancestor_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+CONSTRAINT fk_path_descendant FOREIGN KEY (descendant_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+CONSTRAINT ck_path_depth CHECK (depth BETWEEN 0 AND 7)
+INDEX ix_path_descendant (descendant_id,ancestor_id)
+----
+
+== id_move_preview
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`token` |`CHAR(36)` |否 |— |服务端随机预览引用
+|`actor_user_id` |`BIGINT` |否 |— |绑定实际操作者
+|`organization_id` |`BIGINT` |否 |— |移动目标
+|`new_parent_id` |`BIGINT` |否 |— |已校验父节点
+|`target_version` |`BIGINT` |否 |— |目标版本
+|`tree_version` |`BIGINT` |否 |— |整树依赖版本
+|`expires_at` |`DATETIME(3)` |否 |— |15分钟有效
+|`consumed` |`BOOLEAN` |否 |FALSE |只允许提交一次
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (token)
+CONSTRAINT fk_preview_actor FOREIGN KEY (actor_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+CONSTRAINT fk_preview_org FOREIGN KEY (organization_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+CONSTRAINT fk_preview_parent FOREIGN KEY (new_parent_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+INDEX ix_preview_expiry (expires_at)
+----
+
+== audit_event
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |追加审计标识
+|`actor_user_id` |`BIGINT` |否 |— |真实操作者
+|`action` |`VARCHAR(80)` |否 |— |明确管理动作
+|`target_type` |`VARCHAR(32)` |否 |— |组织/人员/账号
+|`target_id` |`BIGINT` |否 |— |目标标识
+|`before_json` |`JSON` |是 |— |脱敏前状态，仅ID/字段/版本
+|`after_json` |`JSON` |是 |— |脱敏后状态，禁止口令/电话/姓名
+|`trace_id` |`VARCHAR(64)` |否 |— |请求追踪，不是会话标识
+|`created_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC记录时间
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY (id)
+CONSTRAINT fk_audit_actor FOREIGN KEY (actor_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+INDEX ix_audit_actor (actor_user_id,created_at,id)
+INDEX ix_audit_target (target_type,target_id,id)
+----
+
+== auth_role_organization
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`role_id` |`BIGINT` |否 |— |专用角色
+|`organization_id` |`BIGINT` |否 |— |适用组织
+|`include_descendants` |`BOOLEAN` |否 |— |是否包含后代
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(role_id,organization_id)
+CONSTRAINT fk_ro_role FOREIGN KEY(role_id) REFERENCES auth_role(id) ON DELETE RESTRICT
+CONSTRAINT fk_ro_org FOREIGN KEY(organization_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+----
+
+== auth_role_permission_organization
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`role_id` |`BIGINT` |否 |— |角色
+|`permission_id` |`BIGINT` |否 |— |权限
+|`organization_id` |`BIGINT` |否 |— |数据范围节点
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(role_id,permission_id,organization_id)
+CONSTRAINT fk_rpo_source FOREIGN KEY(role_id,permission_id) REFERENCES auth_role_permission(role_id,permission_id) ON DELETE RESTRICT
+CONSTRAINT fk_rpo_org FOREIGN KEY(organization_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+----
+
+== auth_namespace_guard
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`application_id` |`BIGINT` |否 |— |应用授权命名空间
+|`version` |`BIGINT` |否 |0 |任何管理变更使预览过时
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(application_id)
+CONSTRAINT fk_namespace_app FOREIGN KEY(application_id) REFERENCES auth_application(id) ON DELETE RESTRICT
+----
+
+== auth_delegation
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |平台任命
+|`application_id` |`BIGINT` |否 |— |业务应用
+|`administrator_user_id` |`BIGINT` |否 |— |被任命管理员
+|`enabled` |`BOOLEAN` |否 |— |是否具备管理资格
+|`valid_from` |`DATETIME(3)` |是 |— |开始含
+|`valid_to` |`DATETIME(3)` |是 |— |结束不含
+|`people_all` |`BOOLEAN` |否 |— |显式全公司范围
+|`version` |`BIGINT` |否 |0 |配置版本
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(id)
+CONSTRAINT uk_delegation UNIQUE(application_id,administrator_user_id)
+CONSTRAINT fk_delegation_app FOREIGN KEY(application_id) REFERENCES auth_application(id) ON DELETE RESTRICT
+CONSTRAINT fk_delegation_admin FOREIGN KEY(administrator_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+CONSTRAINT ck_delegation_app CHECK(application_id<>1)
+CONSTRAINT ck_delegation_time CHECK(valid_from IS NULL OR valid_to IS NULL OR valid_from<valid_to)
+INDEX ix_delegation_admin(administrator_user_id,enabled,application_id)
+----
+
+== auth_delegation_organization
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`delegation_id` |`BIGINT` |否 |— |委派
+|`organization_id` |`BIGINT` |否 |— |平台指定组织
+|`include_descendants` |`BOOLEAN` |否 |— |包含后代
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(delegation_id,organization_id)
+CONSTRAINT fk_do_delegation FOREIGN KEY(delegation_id) REFERENCES auth_delegation(id) ON DELETE RESTRICT
+CONSTRAINT fk_do_org FOREIGN KEY(organization_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+----
+
+== auth_delegation_role
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`delegation_id` |`BIGINT` |否 |— |委派
+|`role_id` |`BIGINT` |否 |— |可授通用角色白名单
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(delegation_id,role_id)
+CONSTRAINT fk_dr_delegation FOREIGN KEY(delegation_id) REFERENCES auth_delegation(id) ON DELETE RESTRICT
+CONSTRAINT fk_dr_role FOREIGN KEY(role_id) REFERENCES auth_role(id) ON DELETE RESTRICT
+----
+
+== auth_delegation_permission
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`delegation_id` |`BIGINT` |否 |— |委派
+|`permission_id` |`BIGINT` |否 |— |平台指定权限上限
+|`scope_kind` |`VARCHAR(16)` |否 |— |数据范围上限模板
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(delegation_id,permission_id)
+CONSTRAINT fk_dp_delegation FOREIGN KEY(delegation_id) REFERENCES auth_delegation(id) ON DELETE RESTRICT
+CONSTRAINT fk_dp_permission FOREIGN KEY(permission_id) REFERENCES auth_permission(id) ON DELETE RESTRICT
+CONSTRAINT ck_dp_scope CHECK(scope_kind IN ('SELF','ORG','ORG_SUBTREE','ALL'))
+----
+
+== auth_delegation_permission_organization
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`delegation_id` |`BIGINT` |否 |— |委派
+|`permission_id` |`BIGINT` |否 |— |上限权限
+|`organization_id` |`BIGINT` |否 |— |上限组织节点
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(delegation_id,permission_id,organization_id)
+CONSTRAINT fk_dpo_source FOREIGN KEY(delegation_id,permission_id) REFERENCES auth_delegation_permission(delegation_id,permission_id) ON DELETE RESTRICT
+CONSTRAINT fk_dpo_org FOREIGN KEY(organization_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+----
+
+== auth_delegation_action
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`delegation_id` |`BIGINT` |否 |— |显式平台任命
+|`permission_id` |`BIGINT` |否 |— |本应用管理动作资格，不等于业务权限
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(delegation_id,permission_id)
+CONSTRAINT fk_da_delegation FOREIGN KEY(delegation_id) REFERENCES auth_delegation(id) ON DELETE RESTRICT
+CONSTRAINT fk_da_permission FOREIGN KEY(permission_id) REFERENCES auth_permission(id) ON DELETE RESTRICT
+----
+
+== auth_person_responsibility
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`application_id` |`BIGINT` |否 |— |应用
+|`user_id` |`BIGINT` |否 |— |由谁维护的目标人员
+|`delegation_id` |`BIGINT` |是 |— |维护任命；不参与目标权限计算
+|`state` |`VARCHAR(12)` |否 |— |CURRENT/AWAITING
+|`version` |`BIGINT` |否 |0 |交接版本
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(application_id,user_id)
+CONSTRAINT fk_pr_app FOREIGN KEY(application_id) REFERENCES auth_application(id) ON DELETE RESTRICT
+CONSTRAINT fk_pr_user FOREIGN KEY(user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+CONSTRAINT fk_pr_delegation FOREIGN KEY(delegation_id) REFERENCES auth_delegation(id) ON DELETE RESTRICT
+CONSTRAINT ck_pr_state CHECK((state='CURRENT' AND delegation_id IS NOT NULL) OR state='AWAITING')
+INDEX ix_pr_delegation(delegation_id,state,user_id)
+----
+
+== auth_person_version
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`application_id` |`BIGINT` |否 |— |应用
+|`user_id` |`BIGINT` |否 |— |人员账号
+|`version` |`BIGINT` |否 |0 |仅本应用角色覆盖版本
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(application_id,user_id)
+CONSTRAINT fk_pv_app FOREIGN KEY(application_id) REFERENCES auth_application(id) ON DELETE RESTRICT
+CONSTRAINT fk_pv_user FOREIGN KEY(user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+----
+
+== auth_change_preview
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`token` |`CHAR(36)` |否 |— |随机一次性预览
+|`actor_user_id` |`BIGINT` |否 |— |实际主体
+|`kind` |`VARCHAR(24)` |否 |— |权限/成员/交接/调岗
+|`target_id` |`BIGINT` |否 |— |相应实体ID
+|`application_id` |`BIGINT` |是 |— |调岗跨应用为空
+|`target_version` |`BIGINT` |否 |— |目标覆盖版本
+|`tree_version` |`BIGINT` |否 |— |目录快照
+|`namespace_json` |`JSON` |否 |— |命名空间版本快照
+|`payload_json` |`JSON` |否 |— |已校验命令；禁止凭据
+|`expires_at` |`DATETIME(3)` |否 |— |十五分钟
+|`consumed` |`BOOLEAN` |否 |FALSE |已消费
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(token)
+CONSTRAINT fk_cp_actor FOREIGN KEY(actor_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+CONSTRAINT fk_cp_app FOREIGN KEY(application_id) REFERENCES auth_application(id) ON DELETE RESTRICT
+INDEX ix_cp_expiry(expires_at)
+----

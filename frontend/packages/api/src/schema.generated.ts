@@ -140,6 +140,664 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 组织树的平铺节点，当前仅平台管理员 */
+        get: operations["listOrganizations"];
+        put?: never;
+        /** 创建唯一根或合法子组织 */
+        post: operations["createOrganization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/organizations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 组织详情 */
+        get: operations["getOrganization"];
+        /** 修改名称和负责人，不修改层级/类型 */
+        put: operations["updateOrganization"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/organizations/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 启停组织；启用子组织/在职员工阻止停用 */
+        post: operations["changeOrganizationStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/organizations/{id}/move-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 预览移动；已授权人员影响分析待接入则409拒绝 */
+        post: operations["previewOrganizationMove"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/organizations/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 确认操作者绑定的15分钟移动预览，版本变化409/过期410 */
+        post: operations["moveOrganization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/employees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 分页人员；当前平台全量，业务管理员拒绝 */
+        get: operations["listEmployees"];
+        put?: never;
+        /** 创建人员资料，不自动建号或授权 */
+        post: operations["createEmployee"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/employees/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 人员详情 */
+        get: operations["getEmployee"];
+        /** 仅编辑姓名/电话；岗位和组织变动需后续原子换角 */
+        put: operations["updateEmployee"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/employees/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 离职仅停用本人账号/撤回本人角色；其他用户不变 */
+        post: operations["changeEmployeeStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 分页账号，无密码散列 */
+        get: operations["listAccounts"];
+        put?: never;
+        /** 显式为启用员工建号，一对一，不自动授予角色 */
+        post: operations["createAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 账号详情，无密码散列 */
+        get: operations["getAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 启停账号；不得停用最后平台管理员 */
+        post: operations["changeAccountStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/accounts/{id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 平台重置临时口令并撤销旧身份 */
+        post: operations["resetAccountPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 本人校验旧口令后改密，撤销全部旧会话，当前会话退出 */
+        post: operations["changeOwnPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 分页只读管理变更审计，不提供删除或原始秘密 */
+        get: operations["listIdentityAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/managed-applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 当前可管理应用及范围/上限，不按岗位推断 */
+        get: operations["listManagedApplications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 已登记权限只读目录，未实现点不得新授予 */
+        get: operations["listApplicationPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** SQL分页过滤可见通用/本人专用角色 */
+        get: operations["listApplicationRoles"];
+        put?: never;
+        /** 创建单应用角色，业务管理员仅SCOPED且不自提权 */
+        post: operations["createApplicationRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/roles/{roleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 角色详情及当前可编辑/可分配状态 */
+        get: operations["getApplicationRole"];
+        /** 覆盖基本信息/人员范围，保留代码和类型 */
+        put: operations["updateApplicationRole"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/roles/{roleId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 角色启停；恢复时校验完整权限和影响 */
+        post: operations["changeApplicationRoleStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/roles/{roleId}/owner-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 平台预览专用角色及成员维护责任转交，不裁剪旧权限 */
+        post: operations["previewRoleOwnerTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/roles/{roleId}/owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 平台确认角色维护责任交接 */
+        put: operations["transferRoleOwner"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/roles/{roleId}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 角色权限定义及版本 */
+        get: operations["getRolePermissions"];
+        /** 确认预览并同事务替换角色权限和审计 */
+        put: operations["replaceRolePermissions"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/roles/{roleId}/permissions/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 预览权限差异，新增/扩大部分受本人权限及平台上限限制 */
+        post: operations["previewRolePermissions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/roles/{roleId}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** SQL分页仅返回可维护人员，不隐藏分页后的越界行 */
+        get: operations["listRoleMembers"];
+        put?: never;
+        /** 最多100人，任一越界整批拒绝 */
+        post: operations["addRoleMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/roles/{roleId}/members/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 只撤回指定人员的该角色，无关系时幂等成功 */
+        post: operations["removeRoleMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** SQL分页当前可维护人员，无电话/范围外人员 */
+        get: operations["listManageablePeople"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/users/{userId}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 人员本应用角色/有效期/维护责任及应用级授权版本 */
+        get: operations["getUserApplicationRoles"];
+        /** 确认预览按应用覆盖，审计与版本同事务 */
+        put: operations["replaceUserApplicationRoles"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/users/{userId}/roles/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 预览人员角色集合差异，不追溯裁剪历史合法权限 */
+        post: operations["previewUserApplicationRoles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/users/{userId}/effective-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 只读有效权限、数据范围和角色来源，授予者状态不参与 */
+        get: operations["getUserEffectivePermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/delegations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 平台分页查询应用管理员委派 */
+        get: operations["listApplicationDelegations"];
+        put?: never;
+        /** 平台任命管理员并指定组织/角色/权限上限 */
+        post: operations["createApplicationDelegation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/delegations/{delegationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 配置更新只影响以后维护和新增授权 */
+        put: operations["updateApplicationDelegation"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/delegations/{delegationId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 撤销管理资格仅将维护责任待接管，不撤回其他人的角色 */
+        post: operations["changeApplicationDelegationStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/responsibilities/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 平台读取人员本应用维护责任 */
+        get: operations["getUserResponsibility"];
+        /** 平台指定或转交维护责任，旧角色独立生效 */
+        put: operations["setUserResponsibility"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/employees/{id}/assignment-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 平台预览本人全部撤旧/授新及KEEP/RETIRE管理任职 */
+        post: operations["previewEmployeeAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/employees/{id}/assignment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** 原子资料/角色/维护变动，失败全部回滚，他人权限不变 */
+        put: operations["replaceEmployeeAssignment"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/effective-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 本人按应用读取有效权限/来源，不接受客户端操作者 */
+        get: operations["getOwnEffectivePermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/applications/{applicationId}/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 管理范围组织名称目录，仅含必要祖先和获准范围，无人员/计数 */
+        get: operations["listApplicationOrganizations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/employees/{id}/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 平台读取指定人员的账号，未建号时返回null */
+        get: operations["getEmployeeAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -153,6 +811,7 @@ export interface components {
             id: string;
             username: string;
             permissions: string[];
+            forcePasswordChange: boolean;
         };
         AuthenticatedResponse: {
             data: {
@@ -190,6 +849,605 @@ export interface components {
             /** @default 20 */
             size: number;
             total: number;
+        };
+        Organization: {
+            id: string;
+            code: string;
+            name: string;
+            /** @enum {string} */
+            nodeType: "HEADQUARTERS" | "BRANCH" | "DEPARTMENT";
+            parentId: string | null;
+            managerEmployeeId: string | null;
+            enabled: boolean;
+            /** Format: int64 */
+            version: number;
+        };
+        OrganizationCreate: {
+            code: string;
+            name: string;
+            /** @enum {string} */
+            nodeType: "HEADQUARTERS" | "BRANCH" | "DEPARTMENT";
+            parentId: string | null;
+        };
+        OrganizationUpdate: {
+            name: string;
+            managerEmployeeId: string | null;
+            /** Format: int64 */
+            expectedVersion: number;
+        };
+        StatusChange: {
+            enabled: boolean;
+            /** Format: int64 */
+            expectedVersion: number;
+        };
+        MovePreviewRequest: {
+            parentId: string;
+            /** Format: int64 */
+            expectedVersion: number;
+        };
+        MovePreview: {
+            /** Format: uuid */
+            token: string;
+            organizationId: string;
+            parentId: string;
+            /** Format: int64 */
+            expectedVersion: number;
+            /** Format: int64 */
+            treeVersion: number;
+            affectedEmployees: number;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        MoveCommit: {
+            /** Format: uuid */
+            previewToken: string;
+        };
+        Employee: {
+            id: string;
+            employeeCode: string;
+            displayName: string;
+            organizationId: string;
+            positionName: string | null;
+            phone: string | null;
+            enabled: boolean;
+            /** Format: int64 */
+            version: number;
+        };
+        EmployeeCreate: {
+            employeeCode: string;
+            displayName: string;
+            organizationId: string;
+            positionName: string | null;
+            phone: string | null;
+        };
+        EmployeeUpdate: {
+            displayName: string;
+            phone: string | null;
+            /** Format: int64 */
+            expectedVersion: number;
+        };
+        ManagedAccount: {
+            id: string;
+            username: string;
+            employeeId: string | null;
+            enabled: boolean;
+            forcePasswordChange: boolean;
+            /** Format: int64 */
+            version: number;
+        };
+        AccountCreate: {
+            username: string;
+            employeeId: string;
+        };
+        TemporaryCredential: {
+            account: components["schemas"]["ManagedAccount"];
+            /**
+             * Format: password
+             * @description 仅此响应显示一次；不写审计或日志。demo为1234且不强制改密，正常环境随机强口令并强制改密。
+             */
+            temporaryPassword: string;
+        };
+        PasswordReset: {
+            /** Format: int64 */
+            expectedVersion: number;
+        };
+        PasswordChange: {
+            /** Format: password */
+            currentPassword: string;
+            /**
+             * Format: password
+             * @description 至少12字符，最多72个UTF-8字节，且不能与旧密码相同；旧密码不受新策略拒绝。
+             */
+            newPassword: string;
+        };
+        AuditRecord: {
+            id: string;
+            actorUserId: string;
+            action: string;
+            targetType: string;
+            targetId: string;
+            beforeState: {
+                [key: string]: unknown;
+            } | null;
+            afterState: {
+                [key: string]: unknown;
+            } | null;
+            traceId: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        OrganizationPage: {
+            items: components["schemas"]["Organization"][];
+            page: number;
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
+        EmployeePage: {
+            items: components["schemas"]["Employee"][];
+            page: number;
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
+        ManagedAccountPage: {
+            items: components["schemas"]["ManagedAccount"][];
+            page: number;
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
+        AuditRecordPage: {
+            items: components["schemas"]["AuditRecord"][];
+            page: number;
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
+        AccessScope: {
+            /** @enum {string} */
+            kind: "SELF" | "ORG" | "ORG_SUBTREE" | "ALL";
+            organizationIds: string[];
+        };
+        AccessOrganizationRule: {
+            organizationId: string;
+            includeDescendants: boolean;
+        };
+        AccessPeopleScope: {
+            allCompany: boolean;
+            organizations: components["schemas"]["AccessOrganizationRule"][];
+        };
+        AccessPermission: {
+            id: string;
+            applicationId: string;
+            code: string;
+            name: string;
+            enabled: boolean;
+            /** @enum {string} */
+            implementationStatus: "IMPLEMENTED" | "PLANNED";
+        };
+        AccessPermissionGrant: {
+            permissionId: string;
+            scope: components["schemas"]["AccessScope"];
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validFrom?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validTo?: string | null;
+        };
+        AccessPermissionView: {
+            permission: components["schemas"]["AccessPermission"];
+            scope: components["schemas"]["AccessScope"];
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validFrom: string | null;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validTo: string | null;
+        };
+        AccessRoleCreate: {
+            code: string;
+            name: string;
+            /** @enum {string} */
+            kind: "PLATFORM" | "COMMON" | "SCOPED";
+            ownerUserId: string | null;
+            personnelScope: components["schemas"]["AccessPeopleScope"];
+        };
+        AccessRoleUpdate: {
+            name: string;
+            personnelScope: components["schemas"]["AccessPeopleScope"];
+            /** Format: int64 */
+            expectedVersion: number;
+        };
+        AccessRole: {
+            id: string;
+            applicationId: string;
+            code: string;
+            name: string;
+            /** @enum {string} */
+            kind: "PLATFORM" | "COMMON" | "SCOPED" | "LEGACY";
+            ownerUserId: string | null;
+            enabled: boolean;
+            /** Format: int64 */
+            version: number;
+            personnelScope: components["schemas"]["AccessPeopleScope"];
+            canEdit: boolean;
+            canAssign: boolean;
+            memberCount: number;
+        };
+        AccessRolePermissions: {
+            roleId: string;
+            /** Format: int64 */
+            version: number;
+            permissions: components["schemas"]["AccessPermissionView"][];
+        };
+        AccessPermissionSet: {
+            /** Format: int64 */
+            expectedVersion: number;
+            permissions: components["schemas"]["AccessPermissionGrant"][];
+        };
+        AccessPreview: {
+            /** Format: uuid */
+            token: string;
+            /** @enum {string} */
+            kind: "ROLE_PERMISSIONS" | "USER_ROLES" | "ROLE_OWNER" | "EMPLOYEE_TRANSFER";
+            targetId: string;
+            applicationId: string | null;
+            /** Format: int64 */
+            targetVersion: number;
+            /** Format: int64 */
+            treeVersion: number;
+            namespaceVersions: {
+                [key: string]: number;
+            };
+            affectedUsers: number;
+            /** Format: date-time */
+            expiresAt: string;
+            beforeState: {
+                [key: string]: unknown;
+            };
+            afterState: {
+                [key: string]: unknown;
+            };
+        };
+        AccessCommit: {
+            /** Format: uuid */
+            previewToken: string;
+        };
+        AccessRoleOwner: {
+            /** Format: int64 */
+            expectedVersion: number;
+            newAdministratorUserId: string;
+        };
+        AccessMembershipInput: {
+            roleId: string;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validFrom?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validTo?: string | null;
+        };
+        AccessMembership: {
+            roleId: string;
+            roleName: string;
+            /** @enum {string} */
+            kind: "PLATFORM" | "COMMON" | "SCOPED" | "LEGACY";
+            enabled: boolean;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validFrom: string | null;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validTo: string | null;
+            grantedByUserId: string | null;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            grantedAt: string | null;
+        };
+        AccessUserRoleSet: {
+            /** Format: int64 */
+            expectedVersion: number;
+            memberships: components["schemas"]["AccessMembershipInput"][];
+        };
+        AccessResponsibility: {
+            applicationId: string;
+            userId: string;
+            delegationId: string | null;
+            /** @enum {string} */
+            state: "CURRENT" | "AWAITING";
+            /** Format: int64 */
+            version: number;
+        };
+        AccessResponsibilitySet: {
+            delegationId: string | null;
+            /** Format: int64 */
+            expectedVersion: number | null;
+        };
+        AccessUserRoles: {
+            applicationId: string;
+            userId: string;
+            /** Format: int64 */
+            version: number;
+            memberships: components["schemas"]["AccessMembership"][];
+            responsibility: {
+                applicationId: string;
+                userId: string;
+                delegationId: string | null;
+                /** @enum {string} */
+                state: "CURRENT" | "AWAITING";
+                /** Format: int64 */
+                version: number;
+            } | null;
+        };
+        AccessMemberInput: {
+            userId: string;
+            /** Format: int64 */
+            expectedVersion: number;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validFrom?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validTo?: string | null;
+        };
+        AccessMemberBatch: {
+            /** Format: int64 */
+            expectedVersion: number;
+            members: components["schemas"]["AccessMemberInput"][];
+        };
+        AccessMemberRemoval: {
+            userId: string;
+            /** Format: int64 */
+            expectedVersion: number;
+            /** Format: int64 */
+            expectedUserVersion: number;
+        };
+        AccessBatchResult: {
+            roleId: string;
+            affectedUsers: number;
+            users: {
+                userId: string;
+                /** Format: int64 */
+                version: number;
+            }[];
+        };
+        AccessPerson: {
+            userId: string;
+            username: string;
+            employeeId: string | null;
+            displayName: string;
+            organizationId: string | null;
+            enabled: boolean;
+            /** Format: int64 */
+            grantVersion: number;
+            responsibility: {
+                applicationId: string;
+                userId: string;
+                delegationId: string | null;
+                /** @enum {string} */
+                state: "CURRENT" | "AWAITING";
+                /** Format: int64 */
+                version: number;
+            } | null;
+        };
+        AccessRoleMember: {
+            userId: string;
+            username: string;
+            roleId: string;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validFrom: string | null;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validTo: string | null;
+            grantedByUserId: string | null;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            grantedAt: string | null;
+            /** Format: int64 */
+            grantVersion: number;
+        };
+        AccessCeiling: {
+            permissionId: string;
+            scope: components["schemas"]["AccessScope"];
+        };
+        AccessDelegationSet: {
+            administratorUserId: string;
+            enabled: boolean;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validFrom?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validTo?: string | null;
+            peopleScope: components["schemas"]["AccessPeopleScope"];
+            commonRoleIds: string[];
+            permissionCeilings: components["schemas"]["AccessCeiling"][];
+            /** Format: int64 */
+            expectedVersion: number | null;
+        };
+        AccessDelegation: {
+            id: string;
+            applicationId: string;
+            administratorUserId: string;
+            enabled: boolean;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validFrom: string | null;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validTo: string | null;
+            peopleScope: components["schemas"]["AccessPeopleScope"];
+            commonRoleIds: string[];
+            permissionCeilings: components["schemas"]["AccessCeiling"][];
+            /** Format: int64 */
+            version: number;
+        };
+        AccessCapabilities: {
+            all: boolean;
+            self: boolean;
+            organizationIds: string[];
+            subtreeRootIds: string[];
+        };
+        AccessApplication: {
+            id: string;
+            code: string;
+            name: string;
+            /** Format: int64 */
+            version: number;
+            platform: boolean;
+            delegation: {
+                id: string;
+                applicationId: string;
+                administratorUserId: string;
+                enabled: boolean;
+                /**
+                 * Format: date-time
+                 * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+                 */
+                validFrom: string | null;
+                /**
+                 * Format: date-time
+                 * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+                 */
+                validTo: string | null;
+                peopleScope: components["schemas"]["AccessPeopleScope"];
+                commonRoleIds: string[];
+                permissionCeilings: components["schemas"]["AccessCeiling"][];
+                /** Format: int64 */
+                version: number;
+            } | null;
+            allowedOperations: string[];
+            delegablePermissions: {
+                permissionId: string;
+                capabilities: components["schemas"]["AccessCapabilities"];
+            }[];
+        };
+        AccessEffectiveSource: {
+            roleId: string;
+            permissionId: string;
+            code: string;
+            scope: components["schemas"]["AccessScope"];
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validFrom: string | null;
+            /**
+             * Format: date-time
+             * @description UTC毫秒精度；缺省/null为无界，from含/to不含。授权期限不跟随授予者期限。
+             */
+            validTo: string | null;
+            grantedByUserId: string | null;
+            legacy: boolean;
+        };
+        AccessEffective: {
+            userId: string;
+            applicationId: string;
+            permissions: {
+                permissionId: string;
+                code: string;
+                capabilities: components["schemas"]["AccessCapabilities"];
+            }[];
+            sources: components["schemas"]["AccessEffectiveSource"][];
+        };
+        AccessTransferApplication: {
+            applicationId: string;
+            memberships: components["schemas"]["AccessMembershipInput"][];
+            responsibilityDelegationId: string | null;
+        };
+        AccessEmployeeTransfer: {
+            /** Format: int64 */
+            expectedVersion: number;
+            /** Format: int64 */
+            expectedAccountVersion: number | null;
+            organizationId: string;
+            positionName: string | null;
+            /** @enum {string} */
+            managementAction: "KEEP" | "RETIRE";
+            applications: components["schemas"]["AccessTransferApplication"][];
+        };
+        AccessEmployeeTransferResult: {
+            employee: components["schemas"]["Employee"];
+            userId: string | null;
+            applications: components["schemas"]["AccessUserRoles"][];
+        };
+        AccessRolePage: {
+            items: components["schemas"]["AccessRole"][];
+            page: number;
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
+        AccessRoleMemberPage: {
+            items: components["schemas"]["AccessRoleMember"][];
+            page: number;
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
+        AccessPersonPage: {
+            items: components["schemas"]["AccessPerson"][];
+            page: number;
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
+        AccessDelegationPage: {
+            items: components["schemas"]["AccessDelegation"][];
+            page: number;
+            size: number;
+            /** Format: int64 */
+            total: number;
+        };
+        AccessOrganizationChoice: {
+            id: string;
+            code: string;
+            name: string;
+            parentId: string | null;
+            /** @enum {string} */
+            nodeType: "HEADQUARTERS" | "BRANCH" | "DEPARTMENT";
+            enabled: boolean;
+            peopleSelectable: boolean;
+            peopleSubtreeAllowed: boolean;
         };
     };
     responses: {
@@ -231,6 +1489,60 @@ export interface components {
         };
         /** @description 数据库/Redis等必要设施不可可靠读取，拒绝执行 */
         Unavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description 请求结构、ID、分页或未知字段无效 */
+        Identity400: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description 目标不存在 */
+        Identity404: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description 唯一/版本/状态冲突、预览失效或依赖授权模型未接入 */
+        Identity409: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description 移动预览已过期 */
+        Identity410: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description 组织层级、状态、关联或口令规则不满足 */
+        Identity422: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description 登录尝试过于频繁 */
+        Identity429: {
             headers: {
                 [name: string]: unknown;
             };
@@ -408,7 +1720,8 @@ export interface operations {
                      *         "username": "oa-user-1",
                      *         "permissions": [
                      *           "oa:document:view"
-                     *         ]
+                     *         ],
+                     *         "forcePasswordChange": false
                      *       }
                      *     }
                      */
@@ -463,6 +1776,1890 @@ export interface operations {
             200: components["responses"]["Demo"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listOrganizations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            items: components["schemas"]["Organization"][];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createOrganization: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationCreate"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Organization"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getOrganization: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Organization"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateOrganization: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationUpdate"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Organization"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    changeOrganizationStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusChange"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Organization"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    previewOrganizationMove: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MovePreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["MovePreview"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    moveOrganization: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MoveCommit"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Organization"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listEmployees: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                q?: string;
+                sort?: "id" | "name";
+                enabled?: boolean;
+                organizationId?: string;
+                includeDescendants?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["EmployeePage"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createEmployee: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployeeCreate"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Employee"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getEmployee: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Employee"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateEmployee: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmployeeUpdate"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Employee"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    changeEmployeeStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusChange"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Employee"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listAccounts: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                q?: string;
+                sort?: "id" | "name";
+                enabled?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ManagedAccountPage"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createAccount: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountCreate"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TemporaryCredential"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ManagedAccount"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    changeAccountStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusChange"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ManagedAccount"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    resetAccountPassword: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordReset"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TemporaryCredential"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    changeOwnPassword: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChange"];
+            };
+        };
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            /** @enum {boolean} */
+                            authenticated: false;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listIdentityAudit: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AuditRecordPage"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listManagedApplications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            items: components["schemas"]["AccessApplication"][];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listApplicationPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            items: components["schemas"]["AccessPermission"][];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listApplicationRoles: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                q?: string;
+            };
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessRolePage"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createApplicationRole: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessRoleCreate"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessRole"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getApplicationRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessRole"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateApplicationRole: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessRoleUpdate"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessRole"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    changeApplicationRoleStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusChange"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessRole"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    previewRoleOwnerTransfer: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessRoleOwner"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessPreview"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    transferRoleOwner: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessCommit"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessRole"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getRolePermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessRolePermissions"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    replaceRolePermissions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessCommit"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessRolePermissions"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    previewRolePermissions: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessPermissionSet"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessPreview"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listRoleMembers: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                q?: string;
+            };
+            header?: never;
+            path: {
+                applicationId: string;
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessRoleMemberPage"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    addRoleMembers: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessMemberBatch"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessBatchResult"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    removeRoleMember: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessMemberRemoval"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessUserRoles"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listManageablePeople: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                q?: string;
+            };
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessPersonPage"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getUserApplicationRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessUserRoles"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    replaceUserApplicationRoles: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessCommit"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessUserRoles"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    previewUserApplicationRoles: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessUserRoleSet"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessPreview"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getUserEffectivePermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessEffective"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listApplicationDelegations: {
+        parameters: {
+            query?: {
+                page?: number;
+                size?: number;
+                q?: string;
+            };
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessDelegationPage"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    createApplicationDelegation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessDelegationSet"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessDelegation"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    updateApplicationDelegation: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                delegationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessDelegationSet"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessDelegation"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    changeApplicationDelegationStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                delegationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusChange"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessDelegation"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getUserResponsibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            applicationId: string;
+                            userId: string;
+                            delegationId: string | null;
+                            /** @enum {string} */
+                            state: "CURRENT" | "AWAITING";
+                            /** Format: int64 */
+                            version: number;
+                        } | null;
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    setUserResponsibility: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                applicationId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessResponsibilitySet"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessResponsibility"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    previewEmployeeAssignment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessEmployeeTransfer"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessPreview"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    replaceEmployeeAssignment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 同一Cookie会话通过GET csrf取得的token */
+                "X-CSRF-TOKEN": components["parameters"]["CsrfHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessCommit"];
+            };
+        };
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessEmployeeTransferResult"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getOwnEffectivePermissions: {
+        parameters: {
+            query: {
+                applicationId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AccessEffective"];
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    listApplicationOrganizations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功，当前事实已生效；预览尚未修改授权 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            items: components["schemas"]["AccessOrganizationChoice"][];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            503: components["responses"]["Unavailable"];
+        };
+    };
+    getEmployeeAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成功；临时凭据响应禁止缓存 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            id: string;
+                            username: string;
+                            employeeId: string | null;
+                            enabled: boolean;
+                            forcePasswordChange: boolean;
+                            /** Format: int64 */
+                            version: number;
+                        } | null;
+                    };
+                };
+            };
+            400: components["responses"]["Identity400"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["Identity404"];
+            409: components["responses"]["Identity409"];
+            410: components["responses"]["Identity410"];
+            422: components["responses"]["Identity422"];
+            429: components["responses"]["Identity429"];
             503: components["responses"]["Unavailable"];
         };
     };

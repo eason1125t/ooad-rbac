@@ -78,49 +78,30 @@ try {
         .then(() => true),
       true,
     );
-    await page.click("#prototype-preview");
-    assert.match(
-      await page.$eval("main", (element) => element.textContent),
-      /合成原型数据/,
-    );
-    await page.screenshot({
-      path: path.join(out, `${app}-desktop.png`),
-      fullPage: true,
-    });
     if (app === "admin") {
+      assert.ok(
+        page.url().includes("/admin/login"),
+        "admin requires real login",
+      );
       assert.equal(
         await page.$$eval(".site-nav nav a", (links) => links.length),
         5,
       );
-      for (const route of ["organizations", "roles", "applications", "audit"]) {
-        await page.click(`a[href="/admin/${route}"]`);
-        await page.waitForSelector(".detail-panel");
-        const count = await page.$$eval('[role="tab"]', (tabs) => tabs.length);
-        for (let index = 0; index < count; index++) {
-          await page.click(`[role="tab"]:nth-child(${index + 1})`);
-          await page.waitForFunction(
-            (number) =>
-              document
-                .querySelectorAll('[role="tab"]')
-                [number]?.getAttribute("aria-selected") === "true",
-            {},
-            index,
-          );
-        }
-      }
-      for (const state of [
-        "loading",
-        "empty",
-        "failed",
-        "401",
-        "403",
-        "syncing",
-      ]) {
-        await page.select('select[aria-label="状态预览"]', state);
-        assert.ok(await page.$(".empty-state"));
-      }
-      await page.select('select[aria-label="状态预览"]', "normal");
+      assert.equal(
+        await page.$$eval(".login-panel input", (inputs) => inputs.length),
+        2,
+      );
+    } else {
+      await page.click("#prototype-preview");
+      assert.match(
+        await page.$eval("main", (element) => element.textContent),
+        /合成原型数据/,
+      );
     }
+    await page.screenshot({
+      path: path.join(out, `${app}-desktop.png`),
+      fullPage: true,
+    });
     await page.setViewport({ width: 390, height: 844 });
     await page.screenshot({
       path: path.join(out, `${app}-mobile.png`),
@@ -138,7 +119,20 @@ try {
   await page.setViewport({ width: 1366, height: 900 });
   for (const file of [
     "docs/prototypes/index.html",
-    "reports/docs/design.html",
+    "reports/docs/00-文档导航.html",
+    "reports/docs/02-架构与模块实现.html",
+    "reports/docs/03-功能与权限规则详解.html",
+    "reports/docs/04-新环境安装与运行.html",
+    "reports/docs/05-功能操作与测试指南.html",
+    "reports/docs/06-API设计与接口说明.html",
+    "reports/docs/07-数据库设计说明.html",
+    "reports/docs/08-数据库表与字段字典.html",
+    "reports/docs/09-测试结果与验收记录.html",
+    "reports/docs/10-后续开发路线与RBAC演进.html",
+    "reports/docs/11-开发协作与维护约定.html",
+    "reports/docs/12-课程交付与资料边界.html",
+    "reports/docs/14-API接口与模型清单.html",
+    "reports/docs/历史资料/00-历史资料索引.html",
   ]) {
     await page.goto(`${base}/${file}`, { waitUntil: "networkidle0" });
     assert.ok(
@@ -154,17 +148,29 @@ try {
       0,
       "broken document image",
     );
+    const missingAnchors = await page.$$eval('a[href^="#"]', (links) =>
+      links
+        .filter(
+          (link) =>
+            link.hash.length > 1 &&
+            !document.getElementById(decodeURIComponent(link.hash.slice(1))),
+        )
+        .map((link) => link.hash),
+    );
+    assert.deepEqual(missingAnchors, [], `broken section link: ${file}`);
     await page.screenshot({
       path: path.join(
         out,
-        file.includes("prototype") ? "prototype.png" : "design-document.png",
+        file.includes("prototype")
+          ? "prototype.png"
+          : `说明-${path.basename(file, ".html")}.png`,
       ),
       fullPage: false,
     });
   }
   assert.deepEqual(failures, []);
   console.log(
-    "UI smoke PASS: 3 apps desktop/mobile, login, five admin menus and detail tabs/states, prototype and rendered design; synthetic API only.",
+    "UI smoke PASS: 3 apps desktop/mobile, login, five admin menus and mandatory login, prototype and Chinese numbered documents/images/anchors; synthetic API only.",
   );
 } finally {
   if (browser) await browser.close();

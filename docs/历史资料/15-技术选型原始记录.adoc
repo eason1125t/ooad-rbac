@@ -1,0 +1,24 @@
+= ADR-001：课程骨架保留 Boot3，采用单体与直接权限读取
+
+
+NOTE: 历史快照。正文记录当时阶段与定稿，不作为当前完成清单；当前说明见link:../11-开发协作与维护约定.adoc[对应章节]，最新进度见link:../01-项目总览与开发规划.adoc[01]。原文件名：adr/001-baseline.adoc。
+
+状态：本轮采用；日期 2026-10-25。
+
+背景：指定 Java21、Spring Boot3.x、MyBatis、MySQL 和 Redis Session；首轮只贯通认证和最小 RBAC0。
+
+选择：Boot3.5.16 及其 BOM，Maven3.9.11；MyBatis starter3.0.5。同站点 Session；Cookie、CSRF 保留。
+第一轮权限每次请求读取 MySQL 当前关系，Redis 提供 Session 和可用性确认，不实现授权快照缓存。这样到期/多来源语义可直接验证，避免先交付不可靠的失效平台。
+
+代价：逐请求 SQL 不能宣称达到 30ms/万级性能；后续按 design 的分域版本和 outbox 设计增加缓存。Spring 官方说明 3.5.16 是该代最后 OSS 版本，课程保留既定主版本，线上使用前必须评估升级/商业维护，不能称为仍有免费维护。
+
+替代：Boot4 会牵涉 Spring7、Servlet/Jackson 与 starter 升级，当前不悄悄替换；JWT 和微服务不符合本轮既定范围。
+重审触发：计划上线、发现安全修复缺口、课程明确升级版本、或实测权限查询成为瓶颈。
+
+依据：
+
+* https://docs.spring.io/spring-boot/3.5/system-requirements.html[Boot3.5 Java范围]
+* https://spring.io/blog/2026/06/25/spring-boot-3-5-16-available-now/[最后 OSS 发布]
+* https://github.com/mybatis/spring-boot-starter[MyBatis官方兼容矩阵]
+* https://docs.spring.io/spring-security/reference/6.5/servlet/authorization/method-security.html[方法授权]
+* https://docs.spring.io/spring-session/reference/3.5/guides/boot-redis.html[Redis Session]

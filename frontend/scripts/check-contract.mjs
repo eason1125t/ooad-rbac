@@ -23,8 +23,23 @@ for (const [url, item] of Object.entries(api.paths)) {
       throw new Error("duplicate operationId");
     if (operation["x-access"] === "permission" && !operation["x-permission"])
       throw new Error("missing permission");
+    if (
+      url.startsWith("/api/v1/admin/") &&
+      operation.operationId !== "adminDemo" &&
+      operation["x-platform-only"] !== true &&
+      operation["x-managed-application"] !== true &&
+      operation["x-management-console"] !== true
+    )
+      throw new Error(
+        "administration requires explicit platform, application or console scope metadata",
+      );
+    if (
+      ["post", "put", "patch", "delete"].includes(method) &&
+      operation["x-csrf"] !== true
+    )
+      throw new Error("unsafe operation must declare CSRF");
     ids.add(operation.operationId);
   }
 }
-// 外部同步进度只记录在docs/plan.adoc，不在接口契约中复制会过期的环境状态。
+// 外部同步进度只记录在docs/01-项目总览与开发规划.adoc，不在接口契约中复制会过期的环境状态。
 console.log(`OpenAPI valid: ${ids.size} operations`);

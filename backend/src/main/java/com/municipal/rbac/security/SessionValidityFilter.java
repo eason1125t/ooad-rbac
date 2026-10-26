@@ -6,6 +6,7 @@ import com.municipal.rbac.identity.AccountMapper;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import java.io.IOException;
+import java.util.Set;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
@@ -39,6 +40,17 @@ public class SessionValidityFilter extends OncePerRequestFilter {
                     || account.authVersion() != principal.authVersion()) {
                 new SecurityContextLogoutHandler().logout(request, response, authentication);
                 errors.write(request, response, 401, "UNAUTHENTICATED", "登录已失效");
+                return;
+            }
+            String path = request.getRequestURI().substring(request.getContextPath().length());
+            if (account.forcePasswordChange()
+                    && !Set.of(
+                                    "/api/v1/auth/me",
+                                    "/api/v1/auth/csrf",
+                                    "/api/v1/auth/password",
+                                    "/api/v1/auth/logout")
+                            .contains(path)) {
+                errors.write(request, response, 403, "PASSWORD_CHANGE_REQUIRED", "请先修改临时密码");
                 return;
             }
         }

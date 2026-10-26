@@ -1,0 +1,103 @@
+= 测试结果与验收记录
+:toc:
+
+== 最近一次功能复测
+
+2026-10-26按用户要求重新执行。报告在本机reports/acceptance-rerun-summary.json，独立日志以acceptance-rerun-开头；不把历史报告次数相加，不以旧GitHub Actions代表当前工作区。
+
+[cols="2,3,5",options="header"]
+|===
+|检查 |实际结果 |主要证据
+|后端全量verify |84项：83通过、1可选跳过；0失败/错误 |acceptance-rerun-backend.log；Surefire XML
+|必需容器测试 |50项全部执行 |28授权+16身份+6原安全链；acceptance-rerun-ci-guard.log
+|覆盖率门槛 |全部生产包行≥80%、分支≥70% |check-ci-tests.py读取JaCoCo；不排除安全/权限核心
+|前端三端verify |契约、生成类型、typecheck、build、format通过 |acceptance-rerun-frontend.log
+|真实浏览器 |17/17通过，页面异常0 |acceptance-rerun-browser.log、ui/admin-e2e.json
+|当前开发入口会话 |CSRF、Cookie轮换、权限访问、退出及旧会话401通过 |acceptance-rerun-live-login.log；最近端口15173
+|文档/空白检查 |渲染、格式与git diff --check通过 |acceptance-rerun-docs.log、final-format.log、diff-check.log
+|===
+
+原生MySQL可选用例本次未配置专用MYSQL_TEST_URL而跳过；不是容器测试跳过。此前该独立用例曾在MySQL8.4.8执行通过，但本次仍如实记录1项跳过，不能写成本次84项全部通过。
+
+最近功能复测的JaCoCo为行2157/2290=94.19%、分支836/1112=75.18%。数值是此次代码/测试报告，不是未来改动后的承诺，也不代表性能已达标。
+
+== 自动浏览器17组场景
+
+[cols="1,6",options="header"]
+|===
+|序号 |已经实际验证
+|01 |真实登录、五工作区导航
+|02 |组织新增/查询/编辑、父子组织与人员表单联动
+|03 |人员新增/编辑、按人员查询账号、真实显式建号
+|04 |角色新增/编辑、权限范围预览及确认保存
+|05 |成员授予、目标有效权限/来源、员工实际OA访问200
+|06 |移除角色后重新登录员工并实际请求OA返回403
+|07 |角色停用、启用及真实状态回读
+|08 |并发修改产生409、页面保留错误并可重新加载
+|09 |人员完整角色集合预览提交、有效来源详情联动
+|10 |平台配置业务管理员、人员范围、通用角色白名单和权限上限
+|11 |业务管理员创建专用角色、配置权限并给负责员工授权
+|12 |仅见本应用和责任人员；身份管理及跨应用请求403
+|13 |撤回管理员本人权限，员工既有角色与ALL范围不变（v2）
+|14 |调岗换角预览/原子提交、明确保留的新角色集合
+|15 |账号停用/恢复与真实状态联动
+|16 |真实平台审计、桌面与390px布局、页面无JavaScript异常
+|17 |退出、旧会话401、管理路由跳转登录
+|===
+
+测试使用独占MySQL8.4.7/Redis7.4.6及打包应用，合成数据由页面写入，finally停止自己创建的容器/进程；不修改开发库，不批量删除文件。截图在reports/ui，避开临时凭据。静态ui-smoke的合成401只验证登录保护、OA/PMIS原型及文档图片，不能当作真实CRUD证据。
+
+== 后端覆盖与浏览器覆盖的区别
+
+后端另覆盖迁移/复合FK、组织非法层级与移动、版本/重放/过期、双上限/多来源/时间边界、范围/自授/管理员成员、自然过期与责任待接管、多个专用角色分步交接、最后平台管理员、正式口令/强改密、限流、审计回滚和依赖故障。
+
+它们不是每项都由浏览器17组逐步点击。手工T01–T13包含补充操作路线，不能把手工条目数、Java用例数、浏览器组数直接相加称为总测试数。
+
+== 可重复命令
+
+从根目录执行，需要Java、Node/pnpm、Python及可用Docker Linux引擎：
+
+[source,powershell]
+----
+backend/mvnw.cmd -f backend/pom.xml verify
+python scripts/check-ci-tests.py
+pnpm -C frontend run verify
+pnpm -C frontend run test:admin
+python scripts/schema_docs.py
+pnpm -C frontend run docs:api
+python scripts/check_docs.py
+pnpm -C frontend run docs
+pnpm -C frontend exec node scripts/ui-smoke.mjs
+----
+
+test:admin依赖前面产生的backend/target打包JAR及三个前端dist；报告不包含登录口令、Cookie或预览token。Windows使用已安装Edge，其他环境需实际设置CHROME_PATH。
+
+当前开发库已运行且显式demo时，可补充只读/会话检查：
+
+[source,powershell]
+----
+./scripts/verify-local-login.ps1 -BaseUrl http://127.0.0.1:15173
+./scripts/verify-demo-accounts.ps1
+./scripts/verify-identity-api.ps1
+./scripts/verify-authorization-api.ps1
+----
+
+第一条端口按实际入口修改。另有scripts/mysql-smoke.ps1 -MySqlBin指定本机已安装MySQL二进制，可启动独立13308实例验证迁移；它不是必须手工清开发库的脚本，具体参数应查看脚本头部。
+
+== 契约、协作视图和文档检查
+
+OpenAPI当前58操作/67模型已完成Apifox私有项目8967444的MCP导入/语义回读，报告frontend-apifox-semantic.log及environment/apifox-mcp-check.json。最近用户功能复测没有重复执行远程同步；不将此前结果描述成每次测试都会自动同步。
+
+本次中文说明整理只改文档组织、引用、字典/接口清单生成及文档检查工具，不新增业务或改数据库迁移。整理后的验证单独记录在reports/documentation-*，不为纯说明改名机械重跑全部业务用例。
+
+整理检查结果：00–14共15个当前编号文件，33个说明源入口的链接/显式锚点通过；生成的30个HTML页面共452个本地文件、图片与章节链接通过。字典/ER/API清单重生成散列一致，24表字段及58操作/67模型完整核对，AsciiDoc渲染诊断0。浏览器检查编号页面、图片和章节跳转通过；Java仅改说明引用的注释，格式检查通过。具体证据为documentation-check.log、documentation-integrity.json、documentation-generation-stability.json、documentation-render.log、documentation-browser.log、documentation-java-style.log。
+
+== 尚未验收与外部条件
+
+* 资源目录CRUD、授权引用下组织移动完整影响分析、在线导入、OA/PMIS业务与审批、业务管理员范围审计/导出：未实现，不列PASS。
+* outbox/权限缓存、跨实例投影、完整负载目标、备份恢复时长：未交付验收报告。
+* RBAC1继承、RBAC2约束、RBAC3组合：只保留后续设计，不提前实现。
+* 教师截图/模板未提供，采用暂定课程结构；生产版本、HTTPS、容量与维护支持待独立评审。
+* 用户已授权本次干净检出验证后发布main并创建develop；本地演练与远程CI结果分别记录，旧CI不能替代新提交验证。
+
+历史完整执行记录与可选原生MySQL运行口径保留于link:历史资料/06-测试历史记录.adoc[历史测试记录]。当前结论以本文件和实际最新报告为准。

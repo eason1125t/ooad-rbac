@@ -1,0 +1,171 @@
+= 新环境安装与运行
+:toc:
+
+== 先确认代码与环境
+
+本说明主路线为Windows + PowerShell7，新环境使用Compose提供MySQL/Redis。当前电脑已有宿主MySQL，见后面的“已有环境”，不要拿新环境配置覆盖它。
+
+本次发布使用main保存可运行进度，develop从发布后的main创建，供后续开发。新电脑取得仓库访问权限后克隆main；参与开发再切换develop。不要复制原始员工Excel、.env或个人令牌给他人。
+
+[source,powershell]
+----
+git clone --branch main https://github.com/eason1125t/ooad-rbac.git
+cd ooad-rbac
+# 参与后续开发时：git switch develop
+----
+
+[cols="2,3,5",options="header"]
+|===
+|工具 |项目要求/可复现基线 |用途
+|Git |可用的Git客户端 |取得代码；不强制安装GitHub桌面工具
+|Java |JDK21；当前21.0.9 |编译和运行后端，JAVA_HOME指向JDK
+|Node / pnpm |Node至少22.12，当前24.13.0；pnpm12.4.2 |前端安装、开发、类型与构建
+|Docker |可用Linux容器引擎、Compose插件 |新环境依赖及真实集成测试；Windows可用Docker Desktop/WSL2
+|Python |项目文档脚本使用3.10以上，当前3.14.2 |生成数据库字典/ER和校验测试、文档
+|浏览器 |当前使用Edge；也可指定兼容Chromium |浏览器测试和Mermaid渲染；Puppeteer不会自动安装浏览器
+|Navicat / Apifox |可选 |数据库和接口调试；后端运行不依赖二者
+|===
+
+Maven无需全局安装，使用backend/mvnw.cmd（Linux/macOS为backend/mvnw），首次需要下载精确版本依赖。所有下列相对命令均从项目根目录执行，路径含空格时加引号。
+
+[source,powershell]
+----
+git --version
+java -version
+node --version
+npm install --global pnpm@12.4.2
+pnpm --version
+python --version
+docker info
+docker compose version
+----
+
+Windows未启用WSL时，可在管理员PowerShell运行本项目scripts/enable-wsl.ps1，按脚本结果处理必要重启；它不自动重启。安装/启动Docker Desktop，选择Linux容器并等待docker info成功。已有WSL/Docker环境不必重复安装。前端和后端运行终端通常不需要管理员权限。
+
+== 新环境：一次性配置
+
+. 使用当前完整代码目录，确保其中有backend、frontend、contracts、compose.yaml。
+. 只在没有.env时从.env.example复制，填写本机独立强密码。不要覆盖已有.env。
+
+[source,powershell]
+----
+if (-not (Test-Path -LiteralPath '.env')) {
+    Copy-Item -LiteralPath '.env.example' -Destination '.env'
+}
+notepad .env
+----
+
+新环境Compose配置如下，密码位置须替换为自行生成的独立随机值：
+
+[source,text]
+----
+DB_URL=jdbc:mysql://127.0.0.1:3307/rbac?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true
+DB_USERNAME=rbac
+DB_PASSWORD=填写独立随机数据库密码
+MYSQL_ROOT_PASSWORD=填写另一独立随机根密码
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6380
+SPRING_PROFILES_ACTIVE=demo
+BOOTSTRAP_ADMIN_USERNAME=
+BOOTSTRAP_ADMIN_PASSWORD=
+DEMO_RETIRED_USERNAME=
+----
+
+示例文字不能原样当密码；基础设施密码不使用1234。此demo仅绑定本机回环地址，不得与prod组合；.env不进Git。修改.env不会自动修改已有MySQL数据卷的账号密码，出现不一致时应核对已有配置，而非删除数据卷。
+
+== 首次启动顺序
+
+终端A：启动依赖并安装前端依赖。
+
+[source,powershell]
+----
+docker compose up -d --wait
+docker compose ps
+docker compose exec redis redis-cli ping
+pnpm -C frontend install --frozen-lockfile
+----
+
+Redis应返回PONG，MySQL/Redis应healthy。Compose只绑定127.0.0.1:3307和6380，数据位于本项目Docker卷，不接管宿主3306。
+
+终端B：启动后端并保持终端运行。
+
+[source,powershell]
+----
+./scripts/run-backend.ps1
+----
+
+脚本只解析允许的.env键，不执行文件内容。首次由Flyway自动应用V1–V3；无需在Navicat手工运行迁移或创建表。看到Started RbacApplication及demo初始化完成后再登录；health仅表示存活，不等于依赖和初始化已完成。
+
+终端C：启动三个前端。
+
+[source,powershell]
+----
+./scripts/run-frontends.ps1
+----
+
+脚本输出三个进程PID和实际URL。优先端口5173/5174/5175；这些端口不可用时回退15173/15174/15175。管理入口是输出URL中的/admin/，OA/PMIS经管理站点代理访问同源/oa/、/pmis/、/api/。统一使用127.0.0.1，不混用localhost。
+
+默认API代理指向8080。若本机后端改端口，先在启动前端的终端设置$env:API_DEV_URL，例如http://127.0.0.1:18080，再运行启动脚本；对应SERVER_PORT写入后端.env。OA_DEV_URL/PMIS_DEV_URL由前端启动脚本按实际端口设置。
+
+当前电脑曾因Windows保留端口段而使用 http://127.0.0.1:15173/admin/ 。不要把15173写死为所有电脑的要求；如两组端口均不可用，可显式运行run-frontends.ps1 -AdminPort 16173选择一组可用连续端口。
+
+== 首次登录与测试数据
+
+显式demo读取backend/src/main/resources/demo/accounts.json，只首次创建以下合成账号，口令均1234：
+
+[cols="2,5",options="header"]
+|===
+|账号 |初始化演示能力
+|super-admin |平台管理及三个鉴权演示入口
+|oa-admin |平台演示入口与OA；须另配OA委派、范围、白名单/上限和人员责任才可管理人员
+|pmis-admin |平台演示入口与PMIS；须另配PMIS委派与责任
+|oa-user-1 / pmis-user-1 |分别仅对应业务鉴权演示
+|employee-1 |可登录，无上述演示业务权限
+|===
+
+这些账号没有真实员工档案。首次组织/人员列表为空正常，按05建组织、人员、账号、角色。重启不重置已改密码、不恢复已撤角色、不自动启用停用账号；新建demo测试账号也采用隔离的简易口令策略。
+
+== 已有环境与日常重启
+
+当前电脑使用宿主127.0.0.1:3306/ooad_rbac、专用开发账号和已有.env。只运行docker compose up -d --wait redis，确认MySQL服务正常，然后启动后端与前端；不要改成Compose的3307/rbac。
+
+Navicat新连接填“127.0.0.1、对应3306或3307、专用库和本机凭据”，不从他人连接提取密码。已有宿主MySQL的新电脑应先由数据库管理员创建独立库和受限账号，再设置DB_URL/DB_USERNAME/DB_PASSWORD，Flyway仍负责表结构。
+
+后端前台进程用Ctrl+C停止；前端启动脚本是后台进程，可在对应端口/PID确认属于本项目后停止具体进程。docker compose stop暂停依赖并保留数据，不使用删除卷或批量删除文件的方式重置环境。
+
+== Linux/macOS差异
+
+可使用同一Compose与数据库配置，但两个启动脚本按Windows编写（包含mvnw.cmd或隐藏窗口参数），不要直接声称在Linux/macOS可原样运行。其他平台先用可信的环境配置方式向Java进程注入DB_URL、DB_USERNAME、DB_PASSWORD、REDIS_HOST/PORT和SPRING_PROFILES_ACTIVE=demo，再执行bash backend/mvnw -f backend/pom.xml spring-boot:run；前端执行pnpm -C frontend run dev:all（默认5173–5175须可用）。不要直接把含未引用JDBC“&”的.env当作shell脚本执行。
+
+Maven和宿主Java不会自动读取.env，Compose读取.env也不表示Java进程已得到变量。浏览器测试/文档渲染在非Windows环境需安装Chromium兼容浏览器，并将CHROME_PATH设置为实际可执行路径；CI使用/usr/bin/google-chrome。
+
+== 自检与常见故障
+
+[source,powershell]
+----
+Invoke-RestMethod http://127.0.0.1:8080/api/v1/health
+./scripts/verify-local-login.ps1 -BaseUrl http://127.0.0.1:15173
+----
+
+第二条URL要改成前端实际端口，且该脚本要求本机已配置显式demo。自动测试全部命令见09。
+
+[cols="3,6",options="header"]
+|===
+|现象 |处理
+|Docker连接失败 |先打开Docker Desktop并等待引擎就绪；确认Linux容器/WSL状态
+|数据库Access denied或连接失败 |核对库名、端口和.env；区分宿主3306与Compose3307；已有卷保留旧密码
+|Flyway checksum变化 |恢复已应用迁移原文；用新迁移升级，不随意repair或手工改历史表
+|Vite EACCES/端口占用 |使用run-frontends.ps1回退/显式端口；不随意删除系统保留端口规则
+|页面401/跳登录 |重新登录；账号停用、改密、会话到期或Redis数据丢失可使旧身份失效
+|业务管理员无应用/人员 |由平台配置应用委派、有效角色及人员责任，不能靠账号后缀自动判断
+|写接口403 |检查CSRF、具体权限、平台资格/应用委派及范围；不要关闭CSRF
+|写接口409 |回读最新数据，检查版本/预览；引用下组织移动当前属于明确保护
+|503或网络失败 |先确认MySQL/Redis健康，再回读记录，避免重放已经提交的写入
+|文档或测试找不到浏览器 |指定CHROME_PATH；安装前端依赖不会自动下载Puppeteer浏览器
+|===
+
+== Apifox与非演示运行
+
+Apifox可导入contracts/openapi.yaml，环境前置URL为http://127.0.0.1:8080；先取CSRF，再登录，复用Cookie，写入附CSRF头。当前私有协作项目8967444是已有账号下的项目，新电脑/其他人应使用有权限的项目，不默认创建或公开上传。令牌仅在本地隐藏配置，不能发进聊天或Git；MCP不是运行应用的必要条件。
+
+关闭demo后的正常引导由BOOTSTRAP_ADMIN_USERNAME/PASSWORD显式提供强凭据，不存在正式默认管理员密码。prod只增加安全Cookie要求，不能视为自动具备HTTPS、数据库备份、维护版本、容量和上线审批；正式部署需单独评审，不执行本说明中的demo配置。

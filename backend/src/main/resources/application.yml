@@ -24,6 +24,8 @@ spring:
       namespace: municipal:session
   jackson:
     time-zone: UTC
+    deserialization:
+      fail-on-unknown-properties: true
   flyway:
     enabled: true
     validate-on-migrate: true

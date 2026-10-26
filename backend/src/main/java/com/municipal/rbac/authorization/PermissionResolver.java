@@ -5,5 +5,9 @@ import java.time.Instant;
 import java.util.Set;
 
 public interface PermissionResolver {
+    default Set<Long> managedApplications(long subjectId, String operation, Instant now) {
+        return Set.of();
+    }
+
     Set<String> resolve(long subjectId, Instant now);
 }

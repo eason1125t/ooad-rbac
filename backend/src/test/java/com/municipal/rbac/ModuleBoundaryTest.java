@@ -37,7 +37,15 @@ class ModuleBoundaryTest {
                 .resideInAPackage("..identity..")
                 .should()
                 .dependOnClassesThat()
-                .resideInAnyPackage("..authorization..", "..oa..", "..pmis..", "..security..")
+                // 禁止项目/框架安全适配依赖，允许JDK的SecureRandom生成正式临时口令。
+                .resideInAnyPackage(
+                        "com.municipal.rbac.authorization..",
+                        "com.municipal.rbac.oa..",
+                        "com.municipal.rbac.pmis..",
+                        "com.municipal.rbac.security..",
+                        "org.springframework.security..",
+                        "org.springframework.web..",
+                        "jakarta.servlet..")
                 .check(classes);
     }
 }

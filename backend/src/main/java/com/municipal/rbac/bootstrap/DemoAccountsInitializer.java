@@ -72,7 +72,7 @@ public class DemoAccountsInitializer implements ApplicationRunner {
     @Mapper
     public interface DemoMapper {
         @Insert(
-                "INSERT INTO auth_role(code,name) SELECT #{code},#{name} WHERE NOT EXISTS(SELECT 1 FROM auth_role WHERE code=#{code})")
+                "INSERT INTO auth_role(code,name,name_key,application_id,kind) SELECT #{code},#{name},LOWER(#{name}),CASE #{code} WHEN 'demo_platform_view' THEN 1 WHEN 'demo_oa' THEN 2 WHEN 'demo_pmis' THEN 3 END,CASE WHEN #{code}='demo_platform_view' THEN 'PLATFORM' ELSE 'COMMON' END WHERE NOT EXISTS(SELECT 1 FROM auth_role WHERE code=#{code})")
         int createRole(@Param("code") String code, @Param("name") String name);
 
         @Insert(

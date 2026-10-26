@@ -1,0 +1,15 @@
+= 联合课程开发规格说明（临时结构）
+
+:toc:
+:sectnums:
+
+NOTE: 历史快照。正文记录当时阶段与定稿，不作为当前完成清单；当前说明见link:../12-课程交付与资料边界.adoc[对应章节]，最新进度见link:../01-项目总览与开发规划.adoc[01]。原文件名：course-specification.adoc。
+
+未提供教师模板，暂采用需求、总体/详细设计、工程规范、测试与进度的结构化规格；收到模板后仅调整编排，事实继续维护在被引用章节。
+本项目采用面向功能、结构化设计。代码中的Java类和Spring组件是实现技术，不替代本轮设计方法。
+
+include::{doc-root}/历史资料/03-需求历史说明.adoc[leveloffset=+1]
+include::{doc-root}/历史资料/04-设计历史说明.adoc[leveloffset=+1]
+include::{doc-root}/历史资料/05-工程历史说明.adoc[leveloffset=+1]
+include::{doc-root}/历史资料/06-测试历史记录.adoc[leveloffset=+1]
+include::{doc-root}/历史资料/01-阶段进度历史记录.adoc[leveloffset=+1]

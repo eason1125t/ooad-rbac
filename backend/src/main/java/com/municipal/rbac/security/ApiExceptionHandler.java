@@ -2,6 +2,7 @@
 package com.municipal.rbac.security;
 
 import com.municipal.rbac.shared.ApiError;
+import com.municipal.rbac.shared.DomainFailure;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.*;
@@ -10,6 +11,16 @@ import org.springframework.web.bind.annotation.*;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(DomainFailure.class)
+    ResponseEntity<ApiError> domain(HttpServletRequest request, DomainFailure failure) {
+        return error(request, failure.status(), failure.code(), failure.getMessage());
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    ResponseEntity<ApiError> conflict(HttpServletRequest request) {
+        return error(request, 409, "DATA_CONFLICT", "编码、关联或唯一约束冲突");
+    }
+
     @ExceptionHandler(DataAccessException.class)
     ResponseEntity<ApiError> unavailable(HttpServletRequest request) {
         return error(request, 503, "DEPENDENCY_UNAVAILABLE", "必要服务暂不可用");
@@ -23,6 +34,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler({
         org.springframework.web.bind.MethodArgumentNotValidException.class,
         org.springframework.web.bind.MissingServletRequestParameterException.class,
+        org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
         org.springframework.http.converter.HttpMessageNotReadableException.class
     })
     ResponseEntity<ApiError> invalid(HttpServletRequest request) {

@@ -50,7 +50,10 @@ async function logout() {
         <a href="/admin/">权限管理</a><a href="/oa/">OA 公文</a
         ><a href="/pmis/">工程项目</a>
       </div>
-      <p class="nav-note">第一轮工作台<br />业务功能仍在建设</p>
+      <p class="nav-note">
+        {{ application === "admin" ? "角色与授权管理" : "业务功能仍在建设"
+        }}<br />组织、角色与业务权限分别管理
+      </p>
     </aside>
     <div class="main-column">
       <header class="topbar">

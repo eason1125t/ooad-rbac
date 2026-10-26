@@ -1,0 +1,171 @@
+= API设计与接口说明
+:toc:
+
+== 契约与接入方式
+
+唯一可执行契约是link:../contracts/openapi.yaml[OpenAPI]，版本0.3.1，当前58个操作、67个模型。link:14-API接口与模型清单.adoc[14]从契约生成完整操作/参数/模型清单；本文件解释调用原则与主要流程，不新增第二份YAML或手写前端DTO。
+
+本机直连基址http://127.0.0.1:8080，统一前缀/api/v1。前端通过实际管理站点的/api同源代理调用，使用SESSION Cookie；不是Bearer Token接口，也不支持任意跨域SSO。Apifox配置前置URL后，保留同一Cookie会话。
+
+== 认证与CSRF顺序
+
+. GET /api/v1/auth/csrf，取得data.token及data.headerName。
+. POST /api/v1/auth/login，Content-Type为application/x-www-form-urlencoded，表单字段username/password，同时附带返回的CSRF头和Cookie。
+. 登录成功后GET me取得主体；会话已轮换，后续写前重新GET csrf，不沿用登录前令牌。
+. 管理POST/PUT使用application/json并携带当前CSRF头。退出POST logout同样校验CSRF；退出后旧会话不可继续使用。
+
+公开端点只有明确声明的health、csrf、login等规则；“公开登录接口”不等于免CSRF。health只表示进程存活。正常强制改密账号仅可访问必要的csrf/me/password/logout，不能先调用管理或业务接口。
+
+== 通用数据约定
+
+[cols="2,6",options="header"]
+|===
+|项目 |约定
+|成功 |响应为data包裹；创建通常201，查询/更新/确认通常200，具体以操作契约为准
+|错误 |code、message、traceId；客户端显示可恢复提示，不显示异常堆栈
+|ID |十进制字符串，避免JavaScript精度丢失；计数/版本仍为数字
+|时间 |ISO8601 UTC时间；输入接受契约允许的时区形式，数据库DATETIME(3)；[from,to)
+|分页 |page从1，size通常默认20、最大100；q最长100；具体参数看对应操作
+|空值 |标记为nullable的字段使用null；required字段可能仍要求显式传null，不等于可以省略
+|缓存 |身份/授权响应no-store；临时密码、Cookie和预览token不存日志/本地持久化
+|操作者 |来自服务端认证主体；请求内userId是目标，不是可伪造的Actor
+|删除 |没有DELETE操作，状态变化走status，成员/授权关系可撤回
+|===
+
+[source,json]
+----
+{"data":{"id":"123","enabled":true,"version":2}}
+----
+
+[source,json]
+----
+{"code":"业务错误码","message":"可理解的说明","traceId":"请求追踪编号"}
+----
+
+示例ID和token均为占位，不代表存在于当前数据库；先查询真实ID与版本再发写入。
+
+== 管理权限边界
+
+* 平台身份接口：同时检查具体管理权限和admin:platform:manage；组织/员工/账号写及全局审计不向业务管理员开放。
+* 应用管理接口：检查applicationId对应的委派、动作、人员责任和范围；平台也需具备对应动作权限。
+* 管理控制台列表：返回当前可管理应用，不按账号名推断资格。
+* 本人有效权限：auth/effective-permissions只读取自己在指定应用中的来源；任意人员查询走受限管理接口。
+
+契约用x-platform-only、x-managed-application、x-management-console、x-permission及x-csrf说明这些条件。它们不替代Spring方法权限和服务层二次校验；未声明API默认拒绝。
+
+== 接口族与用途
+
+[cols="2,4,5",options="header"]
+|===
+|接口族 |主要路径（省略/api/v1） |调用重点
+|认证/探针 |/health、/auth/csrf、login、logout、me、password |登录使用表单，改密是JSON；旧身份撤销
+|组织 |/admin/organizations，/{id}/status、move-preview、move |目录/对象版本；移动先预览；授权引用时409保护
+|人员 |/admin/employees，/{id}/account、assignment-preview、assignment |普通PUT只改普通资料；按人查询账号可返回null
+|账号 |/admin/accounts，/{id}/status、password-reset |显式建号一对一；一次性临时凭据；身份版本撤销
+|管理应用/目录 |/admin/managed-applications；/admin/applications/{applicationId}/permissions、organizations |只读当前应用/已登记权限和获准组织元数据；无资源CRUD
+|角色 |/admin/applications/{applicationId}/roles及详情/status |PLATFORM/COMMON/SCOPED/LEGACY分别受限
+|角色权限/交接 |角色下permissions/preview、permissions、owner-preview、owner |先预览，确认只提交previewToken
+|成员/人员角色 |角色下members、members/remove；应用下people、users/{userId}/roles与preview |成员批量最多100；人员PUT是完整集合；版本不可混用
+|委派/责任 |应用下delegations、responsibilities/{userId} |平台配置P之外的D与责任；管理员本人角色另授
+|有效权限/审计 |users/{userId}/effective-permissions；/auth/effective-permissions；/admin/audit |前者管理受限，本人接口只看自己；审计仅平台只读
+|鉴权演示 |/admin/demo、/oa/demo、/pmis/demo |真实权限检查；成功不代表公文/项目业务已经完成
+|===
+
+每个HTTP方法、完整路径、参数、成功模型和错误码均可在14查到，不能把上述路径族当作已开放通配接口。
+
+== 版本与预览确认
+
+[cols="3,5",options="header"]
+|===
+|写操作 |版本来源
+|组织/人员/账号/角色基本资料和状态 |对应对象查询返回的version
+|角色权限预览 |角色权限视图的version
+|人员完整角色集合预览 |该用户+应用UserRoles.version，不是账号version
+|批量添加角色成员 |顶层expectedVersion为角色版本；每名成员expectedVersion为该人的应用授权版本
+|移除角色成员 |expectedVersion为角色，expectedUserVersion为该人的应用授权版本
+|委派创建/修改 |创建expectedVersion显式null，更新用委派version
+|责任指定 |首次责任版本可显式null，更新用Responsibility.version
+|人员调岗 |人员expectedVersion及账号expectedAccountVersion；预览另绑定各应用授权状态
+|===
+
+角色权限、人员完整角色集合、专用角色交接和人员调岗使用15分钟服务端预览。确认绑定原操作者、操作类型、目标、对象/目录/命名空间版本，并重核当前权限。不能编辑预览结果充当新请求，也不能跨目标或重放token。
+
+=== 示例：建立角色并替换权限
+
+POST /admin/applications/{applicationId}/roles：
+
+[source,json]
+----
+{
+  "code":"test-oa-reader","name":"OA测试查看员","kind":"COMMON",
+  "ownerUserId":null,
+  "personnelScope":{"allCompany":true,"organizations":[]}
+}
+----
+
+读取角色权限当前version及权限目录ID，再POST角色下/permissions/preview：
+
+[source,json]
+----
+{
+  "expectedVersion":0,
+  "permissions":[{
+    "permissionId":"123",
+    "scope":{"kind":"SELF","organizationIds":[]},
+    "validFrom":null,"validTo":null
+  }]
+}
+----
+
+检查返回的beforeState/afterState、affectedUsers和expiresAt，再PUT角色下/permissions：
+
+[source,json]
+----
+{"previewToken":"使用本次预览实际返回的token"}
+----
+
+不要把示例expectedVersion=0写死；定义已有成员时，权限变化会影响全部持有者。
+
+=== 示例：人员完整角色集合
+
+读取users/{userId}/roles.version后POST该路径下/preview：
+
+[source,json]
+----
+{
+  "expectedVersion":2,
+  "memberships":[{"roleId":"123","validFrom":null,"validTo":null}]
+}
+----
+
+确认后PUT原roles路径，body仅previewToken。memberships是本应用的新完整集合，空数组为撤回全部，不影响其他应用；已有保留关系不会因管理员本人失权被静默过滤。
+
+== 错误与客户端恢复
+
+[cols="1,4,5",options="header"]
+|===
+|状态 |含义 |客户端处理
+|400 |格式、字段、未知属性或参数错误 |按模型修正，不改后端校验来容纳错误请求
+|401 |未登录或身份失效 |重新登录；不带旧会话继续写
+|403 |CSRF、动作权限或资格/范围不允许 |核对CSRF与委派/责任/双上限，不靠隐藏按钮证明安全
+|404 |目标不存在或不在可访问范围 |不尝试枚举其他ID
+|409 |版本冲突、重复、预览失效/重放或组织移动保护 |回读差异再预览；不能自动覆盖
+|410 |预览过期 |重新预览
+|422 |业务规则/组织层级/时间等语义不满足 |按message/code修正；具体操作以契约为准
+|429 |登录限流等保护 |等待允许重试时间，不持续重试
+|503 |必要依赖不可用或结果不能可靠确认 |先恢复依赖并回读事实，写请求不自动重放
+|===
+
+413文件过大、202导入长任务等只属于后续导入设计，不能据此调用尚不存在的上传API。业务列表范围和审批状态错误需在OA/PMIS切片另补契约。
+
+== 契约维护与Apifox
+
+[source,powershell]
+----
+pnpm -C frontend run contract
+pnpm -C frontend run docs:api
+./scripts/verify-apifox-mcp.ps1
+pnpm -C frontend exec node scripts/check-apifox-export.mjs
+----
+
+前两条本地生成类型和14；后两条需要有权限的现有私有项目及本地令牌，用于读取并语义比较，不替代服务端测试。当前8967444最近核对58操作/67模型一致，不代表新电脑天然拥有访问权限。接口改动后先更新契约、测试与实现，再按已授权范围同步对应项目。
