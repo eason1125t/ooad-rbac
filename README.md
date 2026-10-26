@@ -16,7 +16,7 @@
 
 项目基线：Java21 / Spring Boot3.5.16 / MyBatis / MySQL8.4 / Redis7.4；Vue3 / TypeScript / pnpm12.4.2。当前58个API操作、67个模型、24张业务表，契约唯一来源为 [OpenAPI](contracts/openapi.yaml)，DDL唯一来源为 [Flyway](backend/src/main/resources/db/migration)。
 
-最近功能复测：后端84项中83通过、1可选跳过，50项必需容器测试全部执行；真实浏览器17/17通过。准确口径与限制见09。发布分支为 `main`，后续开发分支为 `develop`；新环境使用最新发布提交，具体验证与CI状态见09及GitHub记录。
+干净检出验证：后端88项中87通过、1可选跳过，50项必需容器测试全部执行；真实浏览器17/17通过。准确口径与限制见09。发布分支为 `main`，后续开发分支为 `develop`；新环境使用最新发布提交，具体验证与CI状态见09及GitHub记录。
 
 当前电脑保留已有 `.env` 和宿主MySQL；启动Docker/Redis后分别运行 `./scripts/run-backend.ps1` 和 `./scripts/run-frontends.ps1`。以前端脚本输出入口为准，本机最近为 http://127.0.0.1:15173/admin/ 。显式demo账号 `super-admin` / `1234`；其他演示账号与委派配置步骤见04、05。新电脑按04从独立配置开始，不能覆盖已有数据库或复制秘密。
 
