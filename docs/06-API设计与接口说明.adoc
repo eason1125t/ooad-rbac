@@ -3,7 +3,7 @@
 
 == 契约与接入方式
 
-唯一可执行契约是link:../contracts/openapi.yaml[OpenAPI]，版本0.3.1，当前58个操作、67个模型。link:14-API接口与模型清单.adoc[14]从契约生成完整操作/参数/模型清单；本文件解释调用原则与主要流程，不新增第二份YAML或手写前端DTO。
+唯一可执行契约是link:../contracts/openapi.yaml[OpenAPI]，版本0.4.0，当前96个操作、95个模型。link:14-API接口与模型清单.adoc[14]从契约生成完整操作/参数/模型清单；本文件解释调用原则与主要流程，不新增第二份YAML或手写前端DTO。
 
 本机直连基址http://127.0.0.1:8080，统一前缀/api/v1。前端通过实际管理站点的/api同源代理调用，使用SESSION Cookie；不是Bearer Token接口，也不支持任意跨域SSO。Apifox配置前置URL后，保留同一Cookie会话。
 
@@ -62,7 +62,7 @@
 |组织 |/admin/organizations，/{id}/status、move-preview、move |目录/对象版本；移动先预览；授权引用时409保护
 |人员 |/admin/employees，/{id}/account、assignment-preview、assignment |普通PUT只改普通资料；按人查询账号可返回null
 |账号 |/admin/accounts，/{id}/status、password-reset |显式建号一对一；一次性临时凭据；身份版本撤销
-|管理应用/目录 |/admin/managed-applications；/admin/applications/{applicationId}/permissions、organizations |只读当前应用/已登记权限和获准组织元数据；无资源CRUD
+|管理应用/目录 |/admin/managed-applications；/admin/applications/{applicationId}/permissions、organizations |查询管理应用、权限和获准组织；资源写入走受保护目录接口
 |角色 |/admin/applications/{applicationId}/roles及详情/status |PLATFORM/COMMON/SCOPED/LEGACY分别受限
 |角色权限/交接 |角色下permissions/preview、permissions、owner-preview、owner |先预览，确认只提交previewToken
 |成员/人员角色 |角色下members、members/remove；应用下people、users/{userId}/roles与preview |成员批量最多100；人员PUT是完整集合；版本不可混用
@@ -156,7 +156,7 @@ POST /admin/applications/{applicationId}/roles：
 |503 |必要依赖不可用或结果不能可靠确认 |先恢复依赖并回读事实，写请求不自动重放
 |===
 
-413文件过大、202导入长任务等只属于后续导入设计，不能据此调用尚不存在的上传API。业务列表范围和审批状态错误需在OA/PMIS切片另补契约。
+413文件过大、202导入长任务等只属于后续导入设计，不能据此调用尚不存在的上传API。OA/PMIS已分别声明列表范围、业务状态、指定审批人、版本及审批历史契约。
 
 == 契约维护与Apifox
 
@@ -169,3 +169,16 @@ pnpm -C frontend exec node scripts/check-apifox-export.mjs
 ----
 
 前两条本地生成类型和14；后两条需要有权限的现有私有项目及本地令牌，用于读取并语义比较，不替代服务端测试。当前8967444最近核对58操作/67模型一致，不代表新电脑天然拥有访问权限。接口改动后先更新契约、测试与实现，再按已授权范围同步对应项目。
+
+
+== 目录及业务API调用
+
+目录全应用查询/登记使用/admin/catalog/applications，树/权限读取使用/admin/applications/{applicationId}/catalog，资源与权限分别POST/PUT其集合/实体路径。启停为POST status-preview→PUT status（body仅previewToken），支持恢复已停用应用；无物理DELETE。未知权限码由服务器标PLANNED，不能由请求标已实现。
+
+新登记应用编码3–32位，内置oa等既有编码保留兼容，不能修改。资源新增/完整更新的parentId省略或null表示顶层；要保留位置需传回当前parentId，页面会自动传回，不应把PUT当作仅改名称的局部PATCH。
+
+OA使用/oa/context和/oa/documents，PMIS使用/pmis/context和/pmis/projects。集合GET分页并在SQL过滤，POST创建本人草稿；实体GET/PUT读取及本人编辑。实体下approvers选择当前可审批其他账号，history读取只读办理历史；submit需expectedVersion+approverUserId，withdraw/void/cancel仅expectedVersion，approve/reject需expectedVersion+comment（驳回必填）。
+
+PMIS预算是精确两位小数字符串，例如"100000.50"，不是JSON浮点数。日期为YYYY-MM-DD。请求不接受ownerUserId/organizationId代建字段；创建时服务端取当前主体和组织。缺动作403、范围外404、版本/状态冲突409、无效审批人/日期422。
+
+旧/demo接口仅保留兼容鉴权探针，不能代替新业务接口的验收。

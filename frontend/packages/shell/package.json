@@ -6,7 +6,9 @@
   "exports": {
     ".": "./src/mount.ts",
     "./styles.css": "./src/styles.css",
-    "./session": "./src/session.ts"
+    "./session": "./src/session.ts",
+    "./RecordDialog.vue": "./src/RecordDialog.vue",
+    "./ForcePasswordChange.vue": "./src/ForcePasswordChange.vue"
   },
   "dependencies": {
     "@municipal/api": "workspace:*",

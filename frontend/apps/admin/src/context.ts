@@ -116,7 +116,7 @@ export function useTask() {
       if (e instanceof ApiError) {
         error.value =
           e.message +
-          (e.status === 409
+          (e.status === 409 && e.code !== "RESOURCE_ACTIVATION_CHANGE"
             ? "。记录已变化，请先重新加载，检查差异后再预览。"
             : e.status === 503
               ? "。操作结果尚需确认，请刷新记录后再决定是否重试。"

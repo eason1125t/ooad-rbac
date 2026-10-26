@@ -86,7 +86,7 @@ async function fill(label, value, selector = "dialog[open]") {
       [...document.querySelectorAll(`${selector} label`)].some(
         (l) =>
           l.childNodes[0]?.textContent.trim() === label &&
-          l.querySelector("input,select"),
+          l.querySelector("input,select,textarea"),
       ),
     {},
     label,
@@ -96,7 +96,7 @@ async function fill(label, value, selector = "dialog[open]") {
     (label, selector) =>
       [...document.querySelectorAll(`${selector} label`)]
         .find((l) => l.childNodes[0]?.textContent.trim() === label)
-        ?.querySelector("input,select"),
+        ?.querySelector("input,select,textarea"),
     label,
     selector,
   );

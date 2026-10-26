@@ -131,7 +131,10 @@ public class AccessManager {
     }
 
     private boolean within(Instant from, Instant to) {
-        Instant n = clock.instant();
+        return within(clock.instant(), from, to);
+    }
+
+    private boolean within(Instant n, Instant from, Instant to) {
         return (from == null || !n.isBefore(from)) && (to == null || n.isBefore(to));
     }
 
@@ -738,8 +741,9 @@ public class AccessManager {
         List<EffectiveSource> result = new ArrayList<>();
         Map<String, List<Scope>> scopes = new LinkedHashMap<>();
         Map<String, String> codes = new HashMap<>();
+        Instant now = clock.instant();
         for (Link s : sources.scopeSources(subject, app))
-            if (within(s.userFrom(), s.userTo()) && within(s.roleFrom(), s.roleTo())) {
+            if (within(now, s.userFrom(), s.userTo()) && within(now, s.roleFrom(), s.roleTo())) {
                 Scope range =
                         new Scope(
                                 s.scopeKind(),

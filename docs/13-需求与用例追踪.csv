@@ -3,13 +3,13 @@ FR-01,UC-01,identity/security/bootstrap,V1:id_user/auth_user_role,/auth/csrf|log
 FR-02,UC-02,authorization/security,V1:auth_*,/admin/demo|oa/demo|pmis/demo,Workspace.vue,DatabasePermissionResolverTest|MySqlMigrationTest|SecurityChainTest|MySqlRedisIntegrationTest,IMPLEMENTED_REAL_MYSQL_REDIS_PASS
 FR-03,UC-03,security,V1:id_user,/api/v1/*,Workspace.vue states,SecurityChainTest|InfrastructureBoundaryFilterTest,IMPLEMENTED_PASS
 FR-04,UC-04,identity/administration/audit,V1+V2:identity/closure/preview/audit,/admin/organizations|employees|accounts|audit,/admin/organizations real forms,IdentityAdministrationIntegrationTest|IdentityPolicyTest|admin-e2e.mjs,PLATFORM_IDENTITY_AND_ATOMIC_TRANSFER_REAL_UI_E2E_PASS
-FR-05,UC-05,authorization/administration/audit,V1+V2+V3:role/delegation/responsibility/scopes/preview,/admin/applications/*|employees/*/assignment|auth/effective-permissions,/admin/roles real forms,ApplicationAuthorizationIntegrationTest|ScopePolicyTest|admin-e2e.mjs,APPLICATION_AUTHORIZATION_REAL_UI_E2E_PASS
+FR-05,UC-05,authorization/administration/audit,V1–V4:role/delegation/responsibility/scopes/catalog/preview,/admin/catalog/applications|admin/applications/* catalog/roles/delegations|employees/*/assignment|auth/effective-permissions,/admin/roles real forms,ApplicationAuthorizationIntegrationTest|ScopePolicyTest|admin-e2e.mjs|ResourceBusinessIntegrationTest|business-e2e.mjs,APPLICATION_AUTHORIZATION_REAL_UI_E2E_PASS
 FR-06,UC-06,imports,future migration,planned only,/admin/imports,TC-11 future,DESIGNED_NOT_IMPLEMENTED
-FR-07,UC-07,oa,future oa_document,/oa/demo only,/oa/workspace,SecurityChainTest|TC-12 future,DEMO_IMPLEMENTED_BUSINESS_NOT_IN_SCOPE
-FR-08,UC-08,pmis,future pmis_project,/pmis/demo only,/pmis/workspace,SecurityChainTest|TC-12 future,DEMO_IMPLEMENTED_BUSINESS_NOT_IN_SCOPE
+FR-07,UC-07,oa,V4:oa_document/document_event,/oa/context|documents CRUD|submit|withdraw|approve|reject|history,/oa/workspace,ResourceBusinessIntegrationTest|business-e2e.mjs,REAL_BUSINESS_SQL_SCOPE_AND_WINDOWS_UI_PASS
+FR-08,UC-08,pmis,V4:pmis_project/project_event,/pmis/context|projects CRUD|submit|withdraw|approve|reject|history,/pmis/workspace,ResourceBusinessIntegrationTest|business-e2e.mjs,REAL_BUSINESS_SQL_SCOPE_AND_WINDOWS_UI_PASS
 FR-09,UC-09,security/identity/administration,V1+V2:id_user.auth_version/force_password_change,/auth/me|password|admin/accounts,all:/login,SessionPolicyTest|SecurityChainTest|IdentityAdministrationIntegrationTest|MySqlRedisIntegrationTest,SESSION_ACCOUNT_PASSWORD_THROTTLE_REAL_CHAIN_PASS
-FR-10,UC-10,authorization/audit,future event migration,planned only,Workspace.vue syncing,TC-10 future,DESIGNED_NO_CACHE_OR_SYNC_IMPLEMENTED
-NFR-01,,all,pom/lock/ADR,contracts/openapi.yaml,three apps,ModuleBoundaryTest|build,LOCAL_PASS_CI_NOT_RUN
+FR-10,UC-10,authorization/audit,V1–V4:current permission facts and namespace guards,per-request permission and business range recheck,real business refresh,ApplicationAuthorizationIntegrationTest|ResourceBusinessIntegrationTest|business-e2e.mjs,REAL_TIME_FACT_RECHECK_PASS_CACHE_OUTBOX_DEFERRED
+NFR-01,,all,pom/lock/ADR,contracts/openapi.yaml,three apps,ModuleBoundaryTest|build,LOCAL_PASS_REMOTE_LINUX_BROWSER_ISSUE_DEFERRED
 NFR-02,,shared/security,V1,contracts/openapi.yaml,shared api client,SecurityChainTest|MySqlMigrationTest,LOCAL_PASS
 NFR-03,,performance,future synthetic scale,permission/list/login distinct,not applicable,scripts/performance-smoke.js,TARGET_CONFIRMED_FULL_LOAD_NOT_RUN
 NFR-04,,verification,V1,health,docs/prototypes,JaCoCo|frontend verify|ui smoke,LOCAL_PASS_EXTERNAL_GAPS_RECORDED

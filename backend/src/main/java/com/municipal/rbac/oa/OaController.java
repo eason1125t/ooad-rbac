@@ -1,4 +1,4 @@
-/** 功能：OA真实权限接入演示；不实现公文CRUD，不读取权限内部Mapper，不返回伪造业务数据。 */
+/** 功能：保留OA兼容鉴权探针；真实公文流程由OaDocumentBusinessController提供，不读取授权内部。 */
 package com.municipal.rbac.oa;
 
 import com.municipal.rbac.shared.ApiResponse;
@@ -12,6 +12,12 @@ public class OaController {
     @PreAuthorize("@permissionBridge.allowed(authentication, 'oa', 'oa:document:view')")
     public ApiResponse<?> demo() {
         return ApiResponse.of(
-                Map.of("application", "oa", "status", "SKELETON", "message", "授权链路已接通，公文业务尚未实现"));
+                Map.of(
+                        "application",
+                        "oa",
+                        "status",
+                        "SKELETON",
+                        "message",
+                        "兼容鉴权探针已通过，公文业务使用documents接口"));
     }
 }

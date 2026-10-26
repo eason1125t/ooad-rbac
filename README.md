@@ -1,6 +1,6 @@
 # 市政协同权限工作台
 
-当前已实现 RBAC0 管理平台：身份管理、角色权限、业务管理员委派、人员责任、原子调岗及五个真实 API 工作区。资源目录 CRUD、在线导入、OA/PMIS 审批和 RBAC1–3 尚未实现。
+当前已实现 RBAC0 配置与业务验证闭环：五工作区管理平台、应用资源目录、角色权限、员工授权，以及 OA 公文和 PMIS 立项的真实页面/后端。在线导入、引用下组织移动完整分析、性能目标与 RBAC1–3 仍待后续实现/验收。
 
 从 [00-文档导航](docs/00-文档导航.adoc) 开始。正文采用中文编号，历史材料独立留存，不与当前完成清单混读。
 
@@ -14,10 +14,12 @@
 | 后续 RBAC1/2/3 | [10-后续开发路线与RBAC演进](docs/10-后续开发路线与RBAC演进.adoc) |
 | 接手维护/课程交付 | [11-开发协作与维护约定](docs/11-开发协作与维护约定.adoc)、[12-课程交付与资料边界](docs/12-课程交付与资料边界.adoc) |
 
-项目基线：Java21 / Spring Boot3.5.16 / MyBatis / MySQL8.4 / Redis7.4；Vue3 / TypeScript / pnpm12.4.2。当前58个API操作、67个模型、24张业务表，契约唯一来源为 [OpenAPI](contracts/openapi.yaml)，DDL唯一来源为 [Flyway](backend/src/main/resources/db/migration)。
+项目基线：Java21 / Spring Boot3.5.16 / MyBatis / MySQL8.4 / Redis7.4；Vue3 / TypeScript / pnpm12.4.2。当前96个API操作、95个模型、30张业务表，契约唯一来源为 [OpenAPI](contracts/openapi.yaml)，DDL唯一来源为 [Flyway](backend/src/main/resources/db/migration)。
 
-干净检出验证：后端88项中87通过、1可选跳过，50项必需容器测试全部执行；真实浏览器17/17通过。准确口径与限制见09。发布分支为 `main`，后续开发分支为 `develop`；新环境使用最新发布提交，具体验证与CI状态见09及GitHub记录。
+本轮验证：后端116项中115通过、1可选跳过，74项必需容器全部执行；管理浏览器17组、资源/两业务浏览器25组均通过。准确口径及上一发布的干净检出记录见09。本轮发布合并到`main`，后续开发继续在`develop`；远程Linux浏览器问题按用户要求暂缓，不能据本机通过宣称远程CI全绿。
 
-当前电脑保留已有 `.env` 和宿主MySQL；启动Docker/Redis后分别运行 `./scripts/run-backend.ps1` 和 `./scripts/run-frontends.ps1`。以前端脚本输出入口为准，本机最近为 http://127.0.0.1:15173/admin/ 。显式demo账号 `super-admin` / `1234`；其他演示账号与委派配置步骤见04、05。新电脑按04从独立配置开始，不能覆盖已有数据库或复制秘密。
+当前电脑保留已有 `.env` 和宿主MySQL；启动Docker/Redis后分别运行 `./scripts/run-backend.ps1` 和 `./scripts/run-frontends.ps1`。以前端脚本输出入口为准，本机最近为 http://127.0.0.1:15173/admin/ 。显式demo账号 `super-admin` / `1234`；[05-功能操作与测试指南](docs/05-功能操作与测试指南.adoc)集中列出全部10个固定测试账号、初始密码、权限差异及启动→资源→角色→员工→业务→撤权→恢复的完整流程。新电脑按04从独立配置开始，不能覆盖已有数据库或复制秘密。
 
 生成可浏览说明：`pnpm -C frontend run docs`，打开 `reports/docs/00-文档导航.html`。README、AGENTS、源代码和原始任务输入保留惯例文件名；详细正文统一中文编号。
+
+本轮开发规格和第一阶段检查矩阵见 [15-第一阶段开发规格与验收](docs/15-第一阶段开发规格与验收.adoc)。后端启动后，可在显式本机 demo 运行 `./scripts/prepare-business-demo.ps1` 准备 `oa-employee`、`oa-approver`、`pmis-employee`、`pmis-approver`（新建口令均1234）；已有账号与撤销关系不会恢复。经办人与审批人建议使用不同浏览器配置/隐私窗口，详见04/05。

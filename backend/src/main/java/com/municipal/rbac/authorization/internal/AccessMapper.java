@@ -108,7 +108,9 @@ public interface AccessMapper {
     int roleNode(@Param("id") long id, @Param("node") long node, @Param("subtree") boolean subtree);
 
     @Select(
-            "SELECT id,application_id,code,name,enabled,implementation_status FROM auth_permission WHERE application_id=#{app} ORDER BY id")
+            "SELECT p.id,p.application_id,p.code,p.name,(p.enabled AND "
+                    + GrantMapper.ACTIVE_RESOURCE
+                    + ") enabled,p.implementation_status FROM auth_permission p WHERE p.application_id=#{app} ORDER BY p.id")
     List<Permission> permissions(long app);
 
     @Select(

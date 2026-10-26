@@ -1262,7 +1262,7 @@ class ApplicationAuthorizationIntegrationTest {
                     sql.queryForList(
                             "SELECT version,checksum FROM flyway_schema_history WHERE version IN('1','2') ORDER BY version");
             sql.update("INSERT INTO auth_role(code,name) VALUES('demo_oa','Existing OA')");
-            Flyway f = Flyway.configure().dataSource(source).load();
+            Flyway f = Flyway.configure().dataSource(source).target("3").load();
             assertThat(f.migrate().migrationsExecuted).isEqualTo(1);
             f.validate();
             assertThat(

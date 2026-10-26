@@ -94,7 +94,7 @@ Redis应返回PONG，MySQL/Redis应healthy。Compose只绑定127.0.0.1:3307和63
 ./scripts/run-backend.ps1
 ----
 
-脚本只解析允许的.env键，不执行文件内容。首次由Flyway自动应用V1–V3；无需在Navicat手工运行迁移或创建表。看到Started RbacApplication及demo初始化完成后再登录；health仅表示存活，不等于依赖和初始化已完成。
+脚本只解析允许的.env键，不执行文件内容。首次由Flyway自动应用V1–V4；无需在Navicat手工运行迁移或创建表。看到Started RbacApplication后先确认演示账号能成功登录，再开始管理操作；health仅表示存活，不等于依赖和初始化已完成。
 
 终端C：启动三个前端。
 
@@ -169,3 +169,17 @@ Invoke-RestMethod http://127.0.0.1:8080/api/v1/health
 Apifox可导入contracts/openapi.yaml，环境前置URL为http://127.0.0.1:8080；先取CSRF，再登录，复用Cookie，写入附CSRF头。当前私有协作项目8967444是已有账号下的项目，新电脑/其他人应使用有权限的项目，不默认创建或公开上传。令牌仅在本地隐藏配置，不能发进聊天或Git；MCP不是运行应用的必要条件。
 
 关闭demo后的正常引导由BOOTSTRAP_ADMIN_USERNAME/PASSWORD显式提供强凭据，不存在正式默认管理员密码。prod只增加安全Cookie要求，不能视为自动具备HTTPS、数据库备份、维护版本、容量和上线审批；正式部署需单独评审，不执行本说明中的demo配置。
+
+
+== 准备两个真实业务的合成演示账号
+
+原6个独立demo身份不自动绑定人员或补业务权限。运行后端后可显式执行：
+
+[source,powershell]
+----
+./scripts/prepare-business-demo.ps1
+----
+
+脚本只允许本机且.env显式demo：建立合成业务部门、4名人员/账号、业务权限目录、角色和初始授权。新建oa-employee/pmis-employee为本人经办人，oa-approver/pmis-approver为业务部门子树审批人，口令均1234。不会覆盖已有账号、重置密码、启用已停用权限或恢复已撤角色；若已存在同名账号/角色，按输出在页面核对。
+
+先用super-admin完成平台配置；用不同浏览器配置/隐私窗口分别登录经办人与审批人。同一浏览器配置下三个应用共享同一Session，切换登录会影响同站点其他标签。OA入口为管理站点/oa/，PMIS为/pmis/。生产及非demo不运行此脚本。

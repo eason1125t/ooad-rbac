@@ -44,7 +44,7 @@ Spring Security → 方法权限 → 功能服务 → MyBatis → MySQL
 |administration |IdentityController、AccessController、IdentityAdministration、EmployeeAssignment |管理用例组合层；从认证主体取得Actor，协调身份、授权和审计事务
 |audit |AuditLog |追加脱敏变更事件、平台分页读取；不记录密码、电话、姓名或会话标识
 |bootstrap |RbacApplication、AdminInitializer、DemoAccountsInitializer、HealthController |启动组合根、显式引导/演示初始化；不在重启时恢复撤销的角色
-|oa / pmis |OaController / PmisController |只有真实鉴权演示，不存在公文/项目CRUD或审批表
+|oa / pmis |OaDocument/PmisProject各自Data、Mapper、Service、BusinessController |独立草稿/指定审批/撤回/终止及历史；只调用BusinessAccess公开范围接口
 |imports |package-info |职责预留，尚无在线解析/提交引擎
 |shared |ApiResponse、ApiError、DomainFailure、PageResult |共用响应与错误，避免成为万能业务工具包
 |===
@@ -60,8 +60,8 @@ Spring Security → 方法权限 → 功能服务 → MyBatis → MySQL
 |admin/src/components |GrantEditor完整角色集合，AssignmentEditor原子调岗，ScopeEditor/PeopleScopeEditor区分数据/人员范围，选择器真实分页，EditorDialog/PreviewSummary统一表单
 |admin/src/context.ts |当前应用、管理能力、受限组织目录、错误及未保存提示；最终权限仍由服务器核验
 |frontend/packages/api |client统一Cookie/CSRF/错误；administration为薄适配；schema.generated.ts从OpenAPI生成
-|frontend/packages/shell |共用登录、会话、导航和挂载；OA/PMIS保留明确标注的原型
-|frontend/apps/oa、pmis |独立业务前端位置；完整业务页面待开发，不继续堆入共享shell
+|frontend/packages/shell |共用登录、会话、导航、首次改密和模态外壳；不保存业务记录
+|frontend/apps/oa、pmis |OaWorkspace/PmisWorkspace真实台账、草稿、审批与历史；分别使用强类型业务API
 |===
 
 == 三条核心调用链
@@ -90,4 +90,11 @@ EmployeeAssignment协调IdentityDirectory和AccessManager，一次性校验组�
 
 范围计算保留SELF、组织和子树模板，不能用“当前没有子节点”证明未来子树已授权。请求固定同一个Clock时刻检查[from,to)。权限生效以目标自己的关系为依据，维护责任CURRENT/AWAITING只影响后续维护。
 
-后续扩展优先保持这些公开接口和事务边界。资源、导入、业务状态机、角色继承和约束各自按切片增加，不修改已应用V1–V3。
+后续扩展优先保持这些公开接口和事务边界。资源和两业务已在V4实现；导入、角色继承和约束继续按切片增加，不修改已应用V1–V4。
+
+
+== V4目录与业务接入
+
+CatalogManager维护应用、资源闭包、权限点及启停影响预览，所有目录变更推进授权命名空间版本。新增未知编码仅PLANNED，已实现动作清单来自服务端；登记不会生成接口或自动授权。
+
+BusinessAccess组合当前身份、组织和有效范围并集，业务SQL只接收公开Range值。敏感写锁组织目录→平台/应用命名空间→稳定ID顺序主体→业务记录；提交前复核权限时间边界，状态、历史和脱敏审计同事务。模块边界仍由ArchUnit约束。

@@ -220,21 +220,33 @@ importers:
 
   apps/oa:
     dependencies:
+      '@municipal/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       '@municipal/shell':
         specifier: workspace:*
         version: link:../../packages/shell
       vue:
         specifier: 3.5.22
         version: 3.5.22(typescript@5.9.3)
+      vue-router:
+        specifier: 4.6.3
+        version: 4.6.3(vue@3.5.22(typescript@5.9.3))
 
   apps/pmis:
     dependencies:
+      '@municipal/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       '@municipal/shell':
         specifier: workspace:*
         version: link:../../packages/shell
       vue:
         specifier: 3.5.22
         version: 3.5.22(typescript@5.9.3)
+      vue-router:
+        specifier: 4.6.3
+        version: 4.6.3(vue@3.5.22(typescript@5.9.3))
 
   packages/api: {}
 

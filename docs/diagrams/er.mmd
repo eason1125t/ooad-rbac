@@ -50,6 +50,7 @@ erDiagram
     VARCHAR name
     BOOLEAN enabled
     BIGINT version
+    VARCHAR description
   }
   auth_role {
     BIGINT id
@@ -74,8 +75,13 @@ erDiagram
     VARCHAR name
     BOOLEAN enabled
     VARCHAR implementation_status
+    BIGINT resource_id
+    VARCHAR action
+    VARCHAR description
+    BIGINT version
   }
   auth_application ||--o{ auth_permission : "application_id"
+  auth_resource |o--o{ auth_permission : "application_id_resource_id"
   auth_user_role {
     BIGINT user_id
     BIGINT role_id
@@ -228,3 +234,83 @@ erDiagram
   }
   id_user ||--o{ auth_change_preview : "actor_user_id"
   auth_application |o--o{ auth_change_preview : "application_id"
+  auth_resource {
+    BIGINT id
+    BIGINT application_id
+    BIGINT parent_id
+    VARCHAR code
+    VARCHAR name
+    VARCHAR kind
+    VARCHAR description
+    BOOLEAN enabled
+    BIGINT version
+  }
+  auth_application ||--o{ auth_resource : "application_id"
+  auth_resource |o--o{ auth_resource : "application_id_parent_id"
+  auth_resource_path {
+    BIGINT application_id
+    BIGINT ancestor_id
+    BIGINT descendant_id
+    INT depth
+  }
+  auth_resource ||--o{ auth_resource_path : "application_id_ancestor_id"
+  auth_resource ||--o{ auth_resource_path : "application_id_descendant_id"
+  oa_document {
+    BIGINT id
+    VARCHAR number
+    VARCHAR title
+    TEXT body
+    BIGINT owner_user_id
+    BIGINT organization_id
+    BIGINT approver_user_id
+    VARCHAR status
+    BIGINT version
+    DATETIME created_at
+    DATETIME updated_at
+  }
+  id_user ||--o{ oa_document : "owner_user_id"
+  id_organization ||--o{ oa_document : "organization_id"
+  id_user |o--o{ oa_document : "approver_user_id"
+  oa_document_event {
+    BIGINT id
+    BIGINT record_id
+    BIGINT actor_user_id
+    VARCHAR action
+    VARCHAR from_status
+    VARCHAR to_status
+    VARCHAR comment
+    DATETIME created_at
+  }
+  oa_document ||--o{ oa_document_event : "record_id"
+  id_user ||--o{ oa_document_event : "actor_user_id"
+  pmis_project {
+    BIGINT id
+    VARCHAR number
+    VARCHAR name
+    VARCHAR description
+    DATE planned_start
+    DATE planned_end
+    DECIMAL budget
+    BIGINT owner_user_id
+    BIGINT organization_id
+    BIGINT approver_user_id
+    VARCHAR status
+    BIGINT version
+    DATETIME created_at
+    DATETIME updated_at
+  }
+  id_user ||--o{ pmis_project : "owner_user_id"
+  id_organization ||--o{ pmis_project : "organization_id"
+  id_user |o--o{ pmis_project : "approver_user_id"
+  pmis_project_event {
+    BIGINT id
+    BIGINT record_id
+    BIGINT actor_user_id
+    VARCHAR action
+    VARCHAR from_status
+    VARCHAR to_status
+    VARCHAR comment
+    DATETIME created_at
+  }
+  pmis_project ||--o{ pmis_project_event : "record_id"
+  id_user ||--o{ pmis_project_event : "actor_user_id"

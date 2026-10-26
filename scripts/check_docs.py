@@ -74,22 +74,22 @@ def check() -> None:
     for name in numbered:
         if not re.match(r"^\d{2}-.+\.(adoc|csv)$", name) or not re.search(r"[\u4e00-\u9fff]", name):
             failures.append(f"Unexpected current document name: {name}")
-    if sorted(name[:2] for name in numbered) != [f"{i:02}" for i in range(15)]:
-        failures.append("Current documentation must contain unique 00–14 numbering")
+    if sorted(name[:2] for name in numbered) != [f"{i:02}" for i in range(16)]:
+        failures.append("Current documentation must contain unique 00–15 numbering")
     api_text = (docs / "14-API接口与模型清单.adoc").read_text(encoding="utf-8")
     api_count = len(re.findall(r"^\[\[api-", api_text, re.M))
     model_count = len(re.findall(r"^\[\[model-", api_text, re.M))
-    if api_count != 58 or model_count != 67:
+    if api_count != 96 or model_count != 95:
         failures.append(f"API inventory mismatch: {api_count} operations / {model_count} models; update baseline explicitly")
     dictionary = (docs / "08-数据库表与字段字典.adoc").read_text(encoding="utf-8")
     import schema_docs
     tables = schema_docs.current_tables()
     listed = re.findall(r"^== (\w+)$", dictionary, re.M)
-    if listed != list(tables) or len(listed) != 24:
+    if listed != list(tables) or len(listed) != 30:
         failures.append("Dictionary tables differ from current Flyway model")
     for name, entries in tables.items():
         section = dictionary.split(f"== {name}\n", 1)[1].split("\n== ", 1)[0]
-        fields = [m.group(1) for line in entries if (m := re.match(r"(\w+) (?:BIGINT|INT|CHAR\(|VARCHAR\(|BOOLEAN|DATETIME\(|JSON)", line))]
+        fields = [m.group(1) for line in entries if (m := re.match(rf"(\w+) {schema_docs.COLUMN_TYPE}", line))]
         shown = re.findall(r"^\|`(\w+)` \|", section, re.M)
         if shown != fields:
             failures.append(f"Dictionary field mismatch: {name}")

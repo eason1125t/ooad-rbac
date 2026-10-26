@@ -26,7 +26,7 @@ class MySqlMigrationTest {
                         .dataSource(datasource)
                         .locations("classpath:db/migration")
                         .load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(3);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(4);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         flyway.validate();
         try (var connection = datasource.getConnection();

@@ -17,6 +17,7 @@
     "verify": "pnpm contract && pnpm typecheck && pnpm build && pnpm format:check",
     "docs": "pnpm docs:api && node scripts/render-docs.mjs",
     "test:admin": "node scripts/admin-e2e.mjs",
+    "test:business": "node scripts/business-e2e.mjs",
     "docs:api": "node scripts/generate-api-docs.mjs"
   },
   "devDependencies": {

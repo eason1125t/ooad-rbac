@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
+COLUMN_TYPE = r"(?:BIGINT|INT|CHAR\(\d+\)|VARCHAR\(\d+\)|BOOLEAN|DATETIME\(3\)|JSON|TEXT|DATE|DECIMAL\(\d+,\s*\d+\))"
 
 
 def definitions(body: str) -> list[str]:
@@ -68,7 +69,7 @@ def generate() -> None:
             line = raw.strip().removesuffix(",")
             if not line:
                 continue
-            column = re.match(r"(\w+) (BIGINT|INT|CHAR\(\d+\)|VARCHAR\(\d+\)|BOOLEAN|DATETIME\(3\)|JSON)(.*)", line)
+            column = re.match(rf"(\w+) ({COLUMN_TYPE})(.*)", line)
             if column:
                 field, kind = column.group(1, 2)
                 rest = column.group(3)
@@ -89,7 +90,7 @@ def generate() -> None:
         er.append("  }")
         for fields, parent, referenced in re.findall(r"FOREIGN KEY\s*\(([^)]+)\) REFERENCES (\w+)\(([^)]+)\)", body):
             names = [field.strip() for field in fields.split(",")]
-            optional = all(re.search(rf"^\s*{field} BIGINT NULL", body, re.M) is not None for field in names)
+            optional = any(re.search(rf"^\s*{field} BIGINT NULL", body, re.M) is not None for field in names)
             unique = re.search(rf"UNIQUE\s*\({re.escape(fields)}\)", body) is not None
             left = "|o" if optional else "||"
             right = "o|" if unique else "o{"

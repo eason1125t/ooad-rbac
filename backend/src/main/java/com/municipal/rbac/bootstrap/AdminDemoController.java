@@ -18,6 +18,6 @@ public class AdminDemoController {
                         "status",
                         "SKELETON",
                         "message",
-                        "授权链路已接通，管理业务尚未实现"));
+                        "兼容鉴权探针已通过，管理业务使用admin工作区接口"));
     }
 }

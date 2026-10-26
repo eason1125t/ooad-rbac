@@ -1,4 +1,4 @@
-/** 功能：工程项目真实权限接入演示；后续项目状态和本人归属在本模块实现，不侵入权限核心。 */
+/** 功能：保留PMIS兼容鉴权探针；真实立项流程由PmisProjectBusinessController实现，不侵入授权核心。 */
 package com.municipal.rbac.pmis;
 
 import com.municipal.rbac.shared.ApiResponse;
@@ -12,6 +12,12 @@ public class PmisController {
     @PreAuthorize("@permissionBridge.allowed(authentication, 'pmis', 'pmis:project:view')")
     public ApiResponse<?> demo() {
         return ApiResponse.of(
-                Map.of("application", "pmis", "status", "SKELETON", "message", "授权链路已接通，项目业务尚未实现"));
+                Map.of(
+                        "application",
+                        "pmis",
+                        "status",
+                        "SKELETON",
+                        "message",
+                        "兼容鉴权探针已通过，立项业务使用projects接口"));
     }
 }

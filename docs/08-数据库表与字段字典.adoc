@@ -3,7 +3,7 @@
 :toc: left
 :toclevels: 1
 
-当前24张业务表，不含Flyway历史表。设计与表职责见link:07-数据库设计说明.adoc[07]。默认/生成值、注释及约束从迁移解析；可执行DDL仍以迁移为准。
+当前30张业务表，不含Flyway历史表。设计与表职责见link:07-数据库设计说明.adoc[07]。默认/生成值、注释及约束从迁移解析；可执行DDL仍以迁移为准。
 
 == id_organization
 
@@ -105,6 +105,7 @@ CONSTRAINT fk_user_employee FOREIGN KEY (employee_id) REFERENCES id_employee(id)
 |`name` |`VARCHAR(100)` |否 |— |应用展示名称
 |`enabled` |`BOOLEAN` |否 |TRUE |应用停用则不授予权限
 |`version` |`BIGINT` |否 |0 |未来应用配置版本
+|`description` |`VARCHAR(500)` |否 |'' |应用说明，不表示已实现业务
 |===
 
 约束与索引（保留实际SQL定义）：
@@ -157,6 +158,10 @@ CONSTRAINT ck_role_kind CHECK ((kind='LEGACY' AND application_id IS NULL AND own
 |`name` |`VARCHAR(100)` |否 |— |功能展示名，父目录不隐式授权
 |`enabled` |`BOOLEAN` |否 |TRUE |是否参与计算
 |`implementation_status` |`VARCHAR(16)` |否 |'IMPLEMENTED' |仅实现权限允许新增授予
+|`resource_id` |`BIGINT` |是 |— |功能节点；历史兼容允许为空，管理API强制绑定
+|`action` |`VARCHAR(20)` |是 |— |显式动作，不是通配规则
+|`description` |`VARCHAR(500)` |否 |'' |权限说明
+|`version` |`BIGINT` |否 |0 |目录元数据覆盖版本
 |===
 
 约束与索引（保留实际SQL定义）：
@@ -168,6 +173,7 @@ CONSTRAINT uk_permission_code UNIQUE (code)
 CONSTRAINT fk_permission_app FOREIGN KEY (application_id) REFERENCES auth_application(id) ON DELETE RESTRICT
 INDEX ix_permission_app (application_id, enabled, id)
 CONSTRAINT ck_permission_implementation CHECK(implementation_status IN ('IMPLEMENTED','PLANNED'))
+CONSTRAINT fk_permission_resource FOREIGN KEY(application_id,resource_id) REFERENCES auth_resource(application_id,id) ON DELETE RESTRICT
 ----
 
 == auth_user_role
@@ -554,4 +560,176 @@ PRIMARY KEY(token)
 CONSTRAINT fk_cp_actor FOREIGN KEY(actor_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
 CONSTRAINT fk_cp_app FOREIGN KEY(application_id) REFERENCES auth_application(id) ON DELETE RESTRICT
 INDEX ix_cp_expiry(expires_at)
+----
+
+== auth_resource
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |资源标识
+|`application_id` |`BIGINT` |否 |— |所属应用
+|`parent_id` |`BIGINT` |是 |— |同应用父目录，根为空
+|`code` |`VARCHAR(64)` |否 |— |应用内不可变且不可复用编码
+|`name` |`VARCHAR(100)` |否 |— |目录或功能名称
+|`kind` |`VARCHAR(16)` |否 |— |DIRECTORY/FUNCTION，最多8层
+|`description` |`VARCHAR(500)` |否 |'' |资源说明
+|`enabled` |`BOOLEAN` |否 |TRUE |停用影响全部后代功能权限
+|`version` |`BIGINT` |否 |0 |目录覆盖版本
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(id)
+CONSTRAINT uk_resource_code UNIQUE(application_id,code)
+CONSTRAINT uk_resource_app_id UNIQUE(application_id,id)
+CONSTRAINT fk_resource_app FOREIGN KEY(application_id) REFERENCES auth_application(id) ON DELETE RESTRICT
+CONSTRAINT fk_resource_parent FOREIGN KEY(application_id,parent_id) REFERENCES auth_resource(application_id,id) ON DELETE RESTRICT
+CONSTRAINT ck_resource_kind CHECK(kind IN ('DIRECTORY','FUNCTION'))
+INDEX ix_resource_parent(application_id,parent_id,id)
+----
+
+== auth_resource_path
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`application_id` |`BIGINT` |否 |— |所属应用
+|`ancestor_id` |`BIGINT` |否 |— |祖先目录，含自身
+|`descendant_id` |`BIGINT` |否 |— |后代资源
+|`depth` |`INT` |否 |— |自身为0，最多7
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(application_id,ancestor_id,descendant_id)
+CONSTRAINT fk_resource_path_ancestor FOREIGN KEY(application_id,ancestor_id) REFERENCES auth_resource(application_id,id) ON DELETE RESTRICT
+CONSTRAINT fk_resource_path_descendant FOREIGN KEY(application_id,descendant_id) REFERENCES auth_resource(application_id,id) ON DELETE RESTRICT
+CONSTRAINT ck_resource_depth CHECK(depth BETWEEN 0 AND 7)
+INDEX ix_resource_path_descendant(application_id,descendant_id,ancestor_id)
+----
+
+== oa_document
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |公文标识
+|`number` |`VARCHAR(64)` |否 |— |服务端随机唯一公文编号
+|`title` |`VARCHAR(160)` |否 |— |公文标题
+|`body` |`TEXT` |否 |— |纯文本正文，应用限制10000字
+|`owner_user_id` |`BIGINT` |否 |— |创建本人，不接受客户端代建
+|`organization_id` |`BIGINT` |否 |— |创建时组织快照，不随调岗移动
+|`approver_user_id` |`BIGINT` |是 |— |本轮指定审批人
+|`status` |`VARCHAR(16)` |否 |'DRAFT' |DRAFT/SUBMITTED/APPROVED/REJECTED/VOIDED
+|`version` |`BIGINT` |否 |0 |状态与覆盖更新版本
+|`created_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC创建时间
+|`updated_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC最近动作时间
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(id)
+CONSTRAINT uk_document_number UNIQUE(number)
+CONSTRAINT fk_document_owner FOREIGN KEY(owner_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+CONSTRAINT fk_document_org FOREIGN KEY(organization_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+CONSTRAINT fk_document_approver FOREIGN KEY(approver_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+CONSTRAINT ck_document_status CHECK(status IN ('DRAFT','SUBMITTED','APPROVED','REJECTED','VOIDED'))
+INDEX ix_document_owner(owner_user_id,status,id)
+INDEX ix_document_org(organization_id,status,id)
+INDEX ix_document_approver(approver_user_id,status,id)
+----
+
+== oa_document_event
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |公文历史标识
+|`record_id` |`BIGINT` |否 |— |关联公文
+|`actor_user_id` |`BIGINT` |否 |— |动作主体
+|`action` |`VARCHAR(32)` |否 |— |CREATE/UPDATE/SUBMIT/WITHDRAW/APPROVE/REJECT/VOID
+|`from_status` |`VARCHAR(16)` |是 |— |创建时为空
+|`to_status` |`VARCHAR(16)` |否 |— |动作后状态
+|`comment` |`VARCHAR(500)` |否 |'' |审批意见，业务历史可读，不进入通用审计
+|`created_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC发生时间
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(id)
+CONSTRAINT fk_document_event_record FOREIGN KEY(record_id) REFERENCES oa_document(id) ON DELETE RESTRICT
+CONSTRAINT fk_document_event_actor FOREIGN KEY(actor_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+INDEX ix_document_event_record(record_id,id)
+----
+
+== pmis_project
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |立项标识
+|`number` |`VARCHAR(64)` |否 |— |服务端随机唯一项目编号
+|`name` |`VARCHAR(160)` |否 |— |项目名称
+|`description` |`VARCHAR(2000)` |否 |— |立项说明
+|`planned_start` |`DATE` |否 |— |计划开始日期
+|`planned_end` |`DATE` |否 |— |计划结束日期
+|`budget` |`DECIMAL(16,2)` |否 |— |非负预算，API以两位小数字符串传输
+|`owner_user_id` |`BIGINT` |否 |— |创建负责人，不提供代建或转交
+|`organization_id` |`BIGINT` |否 |— |创建时组织快照
+|`approver_user_id` |`BIGINT` |是 |— |本轮指定审批人
+|`status` |`VARCHAR(16)` |否 |'DRAFT' |DRAFT/SUBMITTED/APPROVED/REJECTED/CANCELLED
+|`version` |`BIGINT` |否 |0 |状态与覆盖更新版本
+|`created_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC创建时间
+|`updated_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC最近动作时间
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(id)
+CONSTRAINT uk_project_number UNIQUE(number)
+CONSTRAINT fk_project_owner FOREIGN KEY(owner_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+CONSTRAINT fk_project_org FOREIGN KEY(organization_id) REFERENCES id_organization(id) ON DELETE RESTRICT
+CONSTRAINT fk_project_approver FOREIGN KEY(approver_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+CONSTRAINT ck_project_status CHECK(status IN ('DRAFT','SUBMITTED','APPROVED','REJECTED','CANCELLED'))
+CONSTRAINT ck_project_dates CHECK(planned_end>=planned_start)
+CONSTRAINT ck_project_budget CHECK(budget>=0)
+INDEX ix_project_owner(owner_user_id,status,id)
+INDEX ix_project_org(organization_id,status,id)
+INDEX ix_project_approver(approver_user_id,status,id)
+----
+
+== pmis_project_event
+
+[cols="2,2,1,4,5",options="header"]
+|===
+|字段 |类型 |可空 |默认/生成 |说明
+|`id` |`BIGINT` |否 |自增 |立项历史标识
+|`record_id` |`BIGINT` |否 |— |关联项目
+|`actor_user_id` |`BIGINT` |否 |— |动作主体
+|`action` |`VARCHAR(32)` |否 |— |CREATE/UPDATE/SUBMIT/WITHDRAW/APPROVE/REJECT/CANCEL
+|`from_status` |`VARCHAR(16)` |是 |— |创建时为空
+|`to_status` |`VARCHAR(16)` |否 |— |动作后状态
+|`comment` |`VARCHAR(500)` |否 |'' |审批意见
+|`created_at` |`DATETIME(3)` |否 |CURRENT_TIMESTAMP(3) |UTC发生时间
+|===
+
+约束与索引（保留实际SQL定义）：
+
+[source,sql]
+----
+PRIMARY KEY(id)
+CONSTRAINT fk_project_event_record FOREIGN KEY(record_id) REFERENCES pmis_project(id) ON DELETE RESTRICT
+CONSTRAINT fk_project_event_actor FOREIGN KEY(actor_user_id) REFERENCES id_user(id) ON DELETE RESTRICT
+INDEX ix_project_event_record(record_id,id)
 ----

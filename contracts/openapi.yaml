@@ -1,9 +1,9 @@
-# 功能：唯一API契约；可空对象展开以兼容OpenAPI3.0与协作平台回读，不另建手写DTO。
+# 功能：唯一API契约；目录与业务定义先于实现，生成前端类型、接口说明并同步私有Apifox。
 openapi: 3.0.3
 info:
   title: 市政统一权限 API
-  version: 0.3.1
-  description: 同站点Session/CSRF。身份平台操作与应用委派管理分离；新增/扩大授权检查本人权限与平台上限，已授角色不依赖授予人状态。组织移动的授权影响分析、完整资源CRUD及业务审批仍未实现。
+  version: 0.4.0
+  description: RBAC0资源目录、角色与员工授权、OA公文与PMIS立项；同站点Session/CSRF，v2授权独立生效及SQL数据范围。Excel导入、组织移动完整影响分析与RBAC1–3另行实施。
 servers:
   - url: /
 security:
@@ -19,14 +19,6 @@ x-planned-operations:
     resource: /api/v1/admin/imports
     status: DESIGNED_NOT_EXPOSED
     lifecycle: 校验预览后确认整批提交；同名负责人不自动匹配
-  - requirement: FR-07
-    resource: /api/v1/oa/documents
-    status: DESIGNED_NOT_EXPOSED
-    dataScope: 本人列表在SQL过滤，写入结合权限、归属与状态
-  - requirement: FR-08
-    resource: /api/v1/pmis/projects
-    status: DESIGNED_NOT_EXPOSED
-    dataScope: 本人列表在SQL过滤，审批权限单独检查
 paths:
   /api/v1/health:
     get:
@@ -1500,6 +1492,75 @@ paths:
           $ref: '#/components/responses/Unavailable'
       x-permission: admin:role:view
       x-managed-application: true
+    post:
+      operationId: createCatalogPermission
+      tags:
+        - admin
+      summary: 新增显式权限点，实施状态由服务器确定
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogPermissionCreate'
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogPermission'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
   /api/v1/admin/applications/{applicationId}/roles:
     get:
       operationId: listApplicationRoles
@@ -3303,6 +3364,2569 @@ paths:
           $ref: '#/components/responses/Unavailable'
       x-permission: admin:account:view
       x-platform-only: true
+  /api/v1/admin/catalog/applications:
+    get:
+      operationId: listCatalogApplications
+      tags:
+        - admin
+      summary: 平台查询全部应用（含停用）
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters: []
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogApplicationList'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+    post:
+      operationId: createCatalogApplication
+      tags:
+        - admin
+      summary: 登记应用；不自动创建接口或授权
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogApplicationCreate'
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogApplication'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/catalog/applications/{applicationId}:
+    put:
+      operationId: updateCatalogApplication
+      tags:
+        - admin
+      summary: 编辑应用名称和说明
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogApplicationUpdate'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogApplication'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/applications/{applicationId}/catalog:
+    get:
+      operationId: getResourceCatalog
+      tags:
+        - admin
+      summary: 查询应用资源树与权限点
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: false
+      x-permission: admin:role:view
+      x-managed-application: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogSnapshot'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/catalog/applications/{applicationId}/status-preview:
+    post:
+      operationId: previewCatalogApplicationStatus
+      tags:
+        - admin
+      summary: 预览启停对角色和人员的影响
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogStatusPreview'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/catalog/applications/{applicationId}/status:
+    put:
+      operationId: changeCatalogApplicationStatus
+      tags:
+        - admin
+      summary: 一次性确认启停；保留授权历史
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessCommit'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogApplication'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '410':
+          description: 预览已过期，需要重新预览
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/applications/{applicationId}/resources:
+    post:
+      operationId: createCatalogResource
+      tags:
+        - admin
+      summary: 新增目录/功能节点
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogResourceCreate'
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogResource'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/applications/{applicationId}/resources/{resourceId}:
+    put:
+      operationId: updateCatalogResource
+      tags:
+        - admin
+      summary: 编辑目录资料，编码不可变
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: resourceId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogResourceUpdate'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogResource'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/applications/{applicationId}/resources/{resourceId}/status-preview:
+    post:
+      operationId: previewCatalogResourceStatus
+      tags:
+        - admin
+      summary: 预览启停对角色和人员的影响
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: resourceId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogStatusPreview'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/applications/{applicationId}/resources/{resourceId}/status:
+    put:
+      operationId: changeCatalogResourceStatus
+      tags:
+        - admin
+      summary: 一次性确认启停；保留授权历史
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: resourceId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessCommit'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogResource'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '410':
+          description: 预览已过期，需要重新预览
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/applications/{applicationId}/permissions/{permissionId}:
+    put:
+      operationId: updateCatalogPermission
+      tags:
+        - admin
+      summary: 编辑目录资料，编码不可变
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: permissionId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogPermissionUpdate'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogPermission'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/applications/{applicationId}/permissions/{permissionId}/status-preview:
+    post:
+      operationId: previewCatalogPermissionStatus
+      tags:
+        - admin
+      summary: 预览启停对角色和人员的影响
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: permissionId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusChange'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogStatusPreview'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/admin/applications/{applicationId}/permissions/{permissionId}/status:
+    put:
+      operationId: changeCatalogPermissionStatus
+      tags:
+        - admin
+      summary: 一次性确认启停；保留授权历史
+      x-application: admin
+      x-requirements:
+        - FR-05
+      x-access: permission
+      x-csrf: true
+      x-permission: admin:catalog:manage
+      x-platform-only: true
+      parameters:
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: permissionId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccessCommit'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CatalogPermission'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '410':
+          description: 预览已过期，需要重新预览
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/oa/context:
+    get:
+      operationId: getOaDocumentContext
+      tags:
+        - oa
+      summary: 当前业务身份组织与有效动作
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: authenticated
+      x-csrf: false
+      parameters: []
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BusinessContext'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/oa/documents:
+    get:
+      operationId: listOaDocuments
+      tags:
+        - oa
+      summary: 按SQL数据范围分页查询，可筛选本人/待我审批
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: permission
+      x-csrf: false
+      x-permission: oa:document:view
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - DRAFT
+              - SUBMITTED
+              - APPROVED
+              - REJECTED
+              - VOIDED
+        - name: mine
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: pendingForMe
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OaDocumentPage'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+    post:
+      operationId: createOaDocument
+      tags:
+        - oa
+      summary: 本人创建草稿，编号和组织由服务端确定
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: permission
+      x-csrf: true
+      x-permission: oa:document:create
+      parameters:
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OaDocumentCreate'
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OaDocument'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/oa/documents/{recordId}:
+    get:
+      operationId: getOaDocument
+      tags:
+        - oa
+      summary: 读取范围内记录
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: permission
+      x-csrf: false
+      x-permission: oa:document:view
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OaDocument'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+    put:
+      operationId: updateOaDocument
+      tags:
+        - oa
+      summary: 本人编辑草稿/驳回记录
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: permission
+      x-csrf: true
+      x-permission: oa:document:update
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OaDocumentUpdate'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OaDocument'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/oa/documents/{recordId}/approvers:
+    get:
+      operationId: listOaDocumentApprovers
+      tags:
+        - oa
+      summary: 选择当前可查看并审批该记录的其他账号
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: permission
+      x-csrf: false
+      x-permission: oa:document:submit
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BusinessApproverList'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/oa/documents/{recordId}/history:
+    get:
+      operationId: listOaDocumentHistory
+      tags:
+        - oa
+      summary: 记录历史只读追加
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: permission
+      x-csrf: false
+      x-permission: oa:document:view
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BusinessEventList'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/oa/documents/{recordId}/submit:
+    post:
+      operationId: submitOaDocument
+      tags:
+        - oa
+      summary: 按权限、范围、版本及状态执行submit
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: permission
+      x-csrf: true
+      x-permission: oa:document:submit
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessSubmit'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OaDocument'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/oa/documents/{recordId}/withdraw:
+    post:
+      operationId: withdrawOaDocument
+      tags:
+        - oa
+      summary: 按权限、范围、版本及状态执行withdraw
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: permission
+      x-csrf: true
+      x-permission: oa:document:withdraw
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessVersion'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OaDocument'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/oa/documents/{recordId}/approve:
+    post:
+      operationId: approveOaDocument
+      tags:
+        - oa
+      summary: 按权限、范围、版本及状态执行approve
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: permission
+      x-csrf: true
+      x-permission: oa:document:approve
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessDecision'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OaDocument'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/oa/documents/{recordId}/reject:
+    post:
+      operationId: rejectOaDocument
+      tags:
+        - oa
+      summary: 按权限、范围、版本及状态执行reject
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: permission
+      x-csrf: true
+      x-permission: oa:document:reject
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessDecision'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OaDocument'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/oa/documents/{recordId}/void:
+    post:
+      operationId: voidOaDocument
+      tags:
+        - oa
+      summary: 按权限、范围、版本及状态执行void
+      x-application: oa
+      x-requirements:
+        - FR-07
+      x-access: permission
+      x-csrf: true
+      x-permission: oa:document:void
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessVersion'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/OaDocument'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/pmis/context:
+    get:
+      operationId: getPmisProjectContext
+      tags:
+        - pmis
+      summary: 当前业务身份组织与有效动作
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: authenticated
+      x-csrf: false
+      parameters: []
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BusinessContext'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/pmis/projects:
+    get:
+      operationId: listPmisProjects
+      tags:
+        - pmis
+      summary: 按SQL数据范围分页查询，可筛选本人/待我审批
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: permission
+      x-csrf: false
+      x-permission: pmis:project:view
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - DRAFT
+              - SUBMITTED
+              - APPROVED
+              - REJECTED
+              - CANCELLED
+        - name: mine
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: pendingForMe
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PmisProjectPage'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+    post:
+      operationId: createPmisProject
+      tags:
+        - pmis
+      summary: 本人创建草稿，编号和组织由服务端确定
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: permission
+      x-csrf: true
+      x-permission: pmis:project:create
+      parameters:
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PmisProjectCreate'
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PmisProject'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/pmis/projects/{recordId}:
+    get:
+      operationId: getPmisProject
+      tags:
+        - pmis
+      summary: 读取范围内记录
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: permission
+      x-csrf: false
+      x-permission: pmis:project:view
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PmisProject'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+    put:
+      operationId: updatePmisProject
+      tags:
+        - pmis
+      summary: 本人编辑草稿/驳回记录
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: permission
+      x-csrf: true
+      x-permission: pmis:project:update
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PmisProjectUpdate'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PmisProject'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/pmis/projects/{recordId}/approvers:
+    get:
+      operationId: listPmisProjectApprovers
+      tags:
+        - pmis
+      summary: 选择当前可查看并审批该记录的其他账号
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: permission
+      x-csrf: false
+      x-permission: pmis:project:submit
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BusinessApproverList'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/pmis/projects/{recordId}/history:
+    get:
+      operationId: listPmisProjectHistory
+      tags:
+        - pmis
+      summary: 记录历史只读追加
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: permission
+      x-csrf: false
+      x-permission: pmis:project:view
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/BusinessEventList'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/pmis/projects/{recordId}/submit:
+    post:
+      operationId: submitPmisProject
+      tags:
+        - pmis
+      summary: 按权限、范围、版本及状态执行submit
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: permission
+      x-csrf: true
+      x-permission: pmis:project:submit
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessSubmit'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PmisProject'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/pmis/projects/{recordId}/withdraw:
+    post:
+      operationId: withdrawPmisProject
+      tags:
+        - pmis
+      summary: 按权限、范围、版本及状态执行withdraw
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: permission
+      x-csrf: true
+      x-permission: pmis:project:withdraw
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessVersion'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PmisProject'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/pmis/projects/{recordId}/approve:
+    post:
+      operationId: approvePmisProject
+      tags:
+        - pmis
+      summary: 按权限、范围、版本及状态执行approve
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: permission
+      x-csrf: true
+      x-permission: pmis:project:approve
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessDecision'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PmisProject'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/pmis/projects/{recordId}/reject:
+    post:
+      operationId: rejectPmisProject
+      tags:
+        - pmis
+      summary: 按权限、范围、版本及状态执行reject
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: permission
+      x-csrf: true
+      x-permission: pmis:project:reject
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessDecision'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PmisProject'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+  /api/v1/pmis/projects/{recordId}/cancel:
+    post:
+      operationId: cancelPmisProject
+      tags:
+        - pmis
+      summary: 按权限、范围、版本及状态执行cancel
+      x-application: pmis
+      x-requirements:
+        - FR-08
+      x-access: permission
+      x-csrf: true
+      x-permission: pmis:project:cancel
+      parameters:
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessVersion'
+      responses:
+        '200':
+          description: 操作成功；不可缓存
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PmisProject'
+        '400':
+          description: 拒绝请求 400
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 拒绝请求 404
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: 拒绝请求 409
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: 拒绝请求 422
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          $ref: '#/components/responses/Unavailable'
 components:
   securitySchemes:
     sessionCookie:
@@ -5215,9 +7839,786 @@ components:
           type: boolean
         peopleSubtreeAllowed:
           type: boolean
+    CatalogApplication:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - code
+        - name
+        - description
+        - enabled
+        - version
+      properties:
+        id:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        code:
+          type: string
+          maxLength: 32
+          pattern: ^[a-z0-9][a-z0-9._-]{1,31}$
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        description:
+          type: string
+          maxLength: 500
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    CatalogApplicationCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - name
+        - description
+      properties:
+        code:
+          type: string
+          maxLength: 32
+          pattern: ^[a-z0-9][a-z0-9._-]{2,31}$
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        description:
+          type: string
+          maxLength: 500
+    CatalogApplicationUpdate:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - description
+        - expectedVersion
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        description:
+          type: string
+          maxLength: 500
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+    CatalogResource:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - applicationId
+        - parentId
+        - code
+        - name
+        - kind
+        - description
+        - enabled
+        - version
+      properties:
+        id:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        applicationId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        parentId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        code:
+          type: string
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9._-]{2,63}$
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        kind:
+          type: string
+          enum:
+            - DIRECTORY
+            - FUNCTION
+        description:
+          type: string
+          maxLength: 500
+        enabled:
+          type: boolean
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    CatalogResourceCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - name
+        - kind
+        - description
+      properties:
+        parentId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        code:
+          type: string
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9._-]{2,63}$
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        kind:
+          type: string
+          enum:
+            - DIRECTORY
+            - FUNCTION
+        description:
+          type: string
+          maxLength: 500
+    CatalogResourceUpdate:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - description
+        - expectedVersion
+      properties:
+        parentId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        description:
+          type: string
+          maxLength: 500
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+    CatalogPermission:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - applicationId
+        - resourceId
+        - code
+        - action
+        - name
+        - description
+        - enabled
+        - effectiveEnabled
+        - implementationStatus
+        - version
+      properties:
+        id:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        applicationId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        resourceId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        code:
+          type: string
+          maxLength: 128
+        action:
+          type: string
+          maxLength: 20
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        description:
+          type: string
+          maxLength: 500
+        enabled:
+          type: boolean
+        effectiveEnabled:
+          type: boolean
+        implementationStatus:
+          type: string
+          enum:
+            - IMPLEMENTED
+            - PLANNED
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    CatalogPermissionCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - resourceId
+        - action
+        - name
+        - description
+      properties:
+        resourceId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        action:
+          type: string
+          maxLength: 20
+          pattern: ^[a-z][a-z0-9_]{2,19}$
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        description:
+          type: string
+          maxLength: 500
+    CatalogPermissionUpdate:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - description
+        - expectedVersion
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+        description:
+          type: string
+          maxLength: 500
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+    CatalogSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+        - application
+        - resources
+        - permissions
+        - implementedCodes
+      properties:
+        application:
+          $ref: '#/components/schemas/CatalogApplication'
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogResource'
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogPermission'
+        implementedCodes:
+          type: array
+          items:
+            type: string
+            maxLength: 128
+    CatalogApplicationList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogApplication'
+    CatalogStatusPreview:
+      type: object
+      additionalProperties: false
+      required:
+        - token
+        - kind
+        - targetId
+        - applicationId
+        - targetVersion
+        - namespaceVersion
+        - treeVersion
+        - enabled
+        - affectedRoles
+        - affectedUsers
+        - expiresAt
+      properties:
+        token:
+          type: string
+          maxLength: 36
+          format: uuid
+        kind:
+          type: string
+          maxLength: 24
+          enum:
+            - APPLICATION
+            - RESOURCE
+            - PERMISSION
+        targetId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        applicationId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        targetVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        namespaceVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        treeVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        enabled:
+          type: boolean
+        affectedRoles:
+          type: integer
+          minimum: 0
+        affectedUsers:
+          type: integer
+          minimum: 0
+        expiresAt:
+          type: string
+          format: date-time
+    BusinessContext:
+      type: object
+      additionalProperties: false
+      required:
+        - applicationId
+        - organizationId
+        - permissions
+      properties:
+        applicationId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        organizationId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        permissions:
+          type: array
+          items:
+            type: string
+            maxLength: 128
+    BusinessApprover:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - username
+      properties:
+        id:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        username:
+          type: string
+          maxLength: 64
+    BusinessApproverList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BusinessApprover'
+    BusinessVersion:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+    BusinessSubmit:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+        - approverUserId
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        approverUserId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+    BusinessDecision:
+      type: object
+      additionalProperties: false
+      required:
+        - expectedVersion
+        - comment
+      properties:
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        comment:
+          type: string
+          maxLength: 500
+    BusinessEvent:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - recordId
+        - actorUserId
+        - action
+        - fromStatus
+        - toStatus
+        - comment
+        - createdAt
+      properties:
+        id:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        recordId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        actorUserId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        action:
+          type: string
+          maxLength: 32
+        fromStatus:
+          type: string
+          maxLength: 16
+          nullable: true
+        toStatus:
+          type: string
+          maxLength: 16
+        comment:
+          type: string
+          maxLength: 500
+        createdAt:
+          type: string
+          format: date-time
+    BusinessEventList:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BusinessEvent'
+    OaDocumentCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - title
+        - body
+      properties:
+        title:
+          type: string
+          maxLength: 160
+          minLength: 1
+        body:
+          type: string
+          maxLength: 10000
+    OaDocumentUpdate:
+      type: object
+      additionalProperties: false
+      required:
+        - title
+        - body
+        - expectedVersion
+      properties:
+        title:
+          type: string
+          maxLength: 160
+          minLength: 1
+        body:
+          type: string
+          maxLength: 10000
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+    OaDocument:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - number
+        - title
+        - body
+        - ownerUserId
+        - organizationId
+        - approverUserId
+        - status
+        - version
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        number:
+          type: string
+          maxLength: 64
+        title:
+          type: string
+          maxLength: 160
+          minLength: 1
+        body:
+          type: string
+          maxLength: 10000
+        ownerUserId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        organizationId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        approverUserId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - SUBMITTED
+            - APPROVED
+            - REJECTED
+            - VOIDED
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    OaDocumentPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+        - size
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OaDocument'
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+    PmisProjectCreate:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - description
+        - plannedStart
+        - plannedEnd
+        - budget
+      properties:
+        name:
+          type: string
+          maxLength: 160
+          minLength: 1
+        description:
+          type: string
+          maxLength: 2000
+        plannedStart:
+          type: string
+          format: date
+        plannedEnd:
+          type: string
+          format: date
+        budget:
+          type: string
+          maxLength: 17
+          pattern: ^(0|[1-9][0-9]{0,13})\.[0-9]{2}$
+          example: '100000.00'
+    PmisProjectUpdate:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - description
+        - plannedStart
+        - plannedEnd
+        - budget
+        - expectedVersion
+      properties:
+        name:
+          type: string
+          maxLength: 160
+          minLength: 1
+        description:
+          type: string
+          maxLength: 2000
+        plannedStart:
+          type: string
+          format: date
+        plannedEnd:
+          type: string
+          format: date
+        budget:
+          type: string
+          maxLength: 17
+          pattern: ^(0|[1-9][0-9]{0,13})\.[0-9]{2}$
+          example: '100000.00'
+        expectedVersion:
+          type: integer
+          format: int64
+          minimum: 0
+    PmisProject:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - number
+        - name
+        - description
+        - plannedStart
+        - plannedEnd
+        - budget
+        - ownerUserId
+        - organizationId
+        - approverUserId
+        - status
+        - version
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        number:
+          type: string
+          maxLength: 64
+        name:
+          type: string
+          maxLength: 160
+          minLength: 1
+        description:
+          type: string
+          maxLength: 2000
+        plannedStart:
+          type: string
+          format: date
+        plannedEnd:
+          type: string
+          format: date
+        budget:
+          type: string
+          maxLength: 17
+          pattern: ^(0|[1-9][0-9]{0,13})\.[0-9]{2}$
+          example: '100000.00'
+        ownerUserId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        organizationId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        approverUserId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - SUBMITTED
+            - APPROVED
+            - REJECTED
+            - CANCELLED
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    PmisProjectPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+        - size
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PmisProject'
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+        total:
+          type: integer
+          format: int64
+          minimum: 0
   responses:
     Demo:
-      description: 已通过真实权限检查；业务仍为骨架
+      description: 兼容历史鉴权探针；SKELETON仅保留协议枚举，不代表当前系统开发阶段，真实业务走记录接口
       content:
         application/json:
           schema:
@@ -5226,7 +8627,7 @@ components:
             data:
               application: oa
               status: SKELETON
-              message: 授权链路已接通，公文业务尚未实现
+              message: 兼容鉴权探针已通过，公文业务使用documents接口
     Unauthorized:
       description: 身份无效或过期/登录凭据错误
       content:

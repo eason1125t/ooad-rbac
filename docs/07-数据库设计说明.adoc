@@ -3,11 +3,11 @@
 
 == 事实源与现状
 
-唯一可执行DDL是link:../backend/src/main/resources/db/migration[Flyway迁移]，当前V1、V2、V3共24张业务表，另有flyway_schema_history。link:08-数据库表与字段字典.adoc[08字段字典]和下图从全部迁移生成，不能拿说明表格代替实际迁移。
+唯一可执行DDL是link:../backend/src/main/resources/db/migration[Flyway迁移]，当前V1–V4共30张业务表，另有flyway_schema_history。link:08-数据库表与字段字典.adoc[08字段字典]和下图从全部迁移生成，不能拿说明表格代替实际迁移。
 
 image::diagrams/er.svg[当前数据库ER,width=1200]
 
-当前没有资源树、在线导入、outbox、OA公文/审批或PMIS项目/审批表，也没有角色继承/SSD/DSD表。未来模型见10，不能把设计表当成已经存在。
+当前已有资源树、OA公文/历史和PMIS项目/历史表；在线导入、outbox、角色继承/SSD/DSD表仍未实现。未来模型见10，不能把设计表当成已经存在。
 
 == 表分组与职责
 
@@ -75,7 +75,7 @@ image::diagrams/er.svg[当前数据库ER,width=1200]
 |V3 |单应用角色分类/归属、数据范围/授予来源、委派/责任/授权版本/通用预览 |增加12张表；旧bootstrap保留受保护LEGACY，demo角色明确归属
 |===
 
-Flyway自动按版本顺序执行，重复启动只校验已应用迁移。新需求新增V4及后续迁移，不修改V1–V3，不手工改flyway_schema_history来掩盖漂移。
+Flyway自动按版本顺序执行，重复启动只校验已应用迁移。新需求新增V5及后续迁移，不修改V1–V4，不手工改flyway_schema_history来掩盖漂移。
 
 DemoAccountsInitializer仅在显式demo下首次插入合成账号/角色；重启不恢复旧密码或授权。正常引导凭据从环境提供，原始Excel从未作为启动种子导入。
 
@@ -88,6 +88,19 @@ pnpm -C frontend run docs
 backend/mvnw.cmd -f backend/pom.xml verify
 ----
 
-第一条只解析本项目DDL生成08和可编辑ER，不连接数据库；第三条才在真实MySQL中验证空库、升级、约束和事务。两种检查不能互相替代。当前本机专用库已有V3，测试使用独占容器，不清开发库。
+第一条只解析本项目DDL生成08和可编辑ER，不连接数据库；第三条才在真实MySQL中验证空库、升级、约束和事务。两种检查不能互相替代。当前本机专用库由V3私有备份并恢复验证后升级V4，测试使用独占容器，不清开发库。
 
 已有数据库改动前先备份指定项目库，保存于忽略提交的私有位置并验证可恢复。Navicat仅是客户端，不手工执行自动生成字典；不删除其他库、不批量删目录、不用重建卷来掩盖迁移问题。正式备份策略及恢复时长仍待独立验收。
+
+
+== V4新增模型
+
+* auth_resource：应用内不可复用编码、目录/功能类型、父节点、说明、enabled/version；同应用复合外键防止跨应用父子。
+* auth_resource_path：含自身的祖先闭包和0–7深度，资源移动在应用锁内验证环/深度后原子重建；权限解析据祖先启停决定生效。
+* auth_application补description；auth_permission补resource_id/action/description/version，既有权限已回填节点。resource_id为空仅兼容历史直接插入，管理API必须绑定同应用功能节点。
+* oa_document及oa_document_event：纯文本公文与追加历史；状态DRAFT/SUBMITTED/APPROVED/REJECTED/VOIDED。
+* pmis_project及pmis_project_event：DATE计划、DECIMAL(16,2)预算、独立立项历史；终止状态CANCELLED。日期/金额/状态另有CHECK。
+
+两业务owner、组织、审批人均物理外键RESTRICT；组织保存创建快照。索引分别覆盖owner+状态、组织+状态、审批人+状态及历史record_id。业务数据不进入通用审计，通用审计只记ID/状态/版本；业务历史意见仅范围内可读。编号服务端随机生成并有唯一索引。列表/count/详情/锁定写使用同一范围谓词，不做前端裁剪。
+
+V4只给受保护引导角色增加平台目录管理点，不给普通账号扩展业务授权。新业务点可从页面登记，显式demo准备脚本才建立合成经办/审批角色；不会重启恢复历史撤销。

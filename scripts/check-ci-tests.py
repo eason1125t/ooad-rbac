@@ -15,6 +15,7 @@ def check() -> None:
         "com.municipal.rbac.bootstrap.MySqlRedisIntegrationTest": 6,
         "com.municipal.rbac.bootstrap.IdentityAdministrationIntegrationTest": 16,
         "com.municipal.rbac.bootstrap.ApplicationAuthorizationIntegrationTest": 28,
+        "com.municipal.rbac.bootstrap.ResourceBusinessIntegrationTest": 24,
     }
     optional = "com.municipal.testing.MySqlMigrationTest"
     total = passed = skipped = 0

@@ -92,10 +92,13 @@ try {
         2,
       );
     } else {
-      await page.click("#prototype-preview");
-      assert.match(
-        await page.$eval("main", (element) => element.textContent),
-        /合成原型数据/,
+      assert.ok(
+        page.url().includes(`/${app}/login`),
+        `${app} requires real login`,
+      );
+      assert.equal(
+        await page.$$eval(".login-panel input", (inputs) => inputs.length),
+        2,
       );
     }
     await page.screenshot({
@@ -132,6 +135,7 @@ try {
     "reports/docs/11-开发协作与维护约定.html",
     "reports/docs/12-课程交付与资料边界.html",
     "reports/docs/14-API接口与模型清单.html",
+    "reports/docs/15-第一阶段开发规格与验收.html",
     "reports/docs/历史资料/00-历史资料索引.html",
   ]) {
     await page.goto(`${base}/${file}`, { waitUntil: "networkidle0" });
@@ -170,7 +174,7 @@ try {
   }
   assert.deepEqual(failures, []);
   console.log(
-    "UI smoke PASS: 3 apps desktop/mobile, login, five admin menus and mandatory login, prototype and Chinese numbered documents/images/anchors; synthetic API only.",
+    "UI smoke PASS: 3 apps desktop/mobile, login, five admin menus and mandatory login on all applications, historical prototype and Chinese numbered documents/images/anchors; synthetic API only.",
   );
 } finally {
   if (browser) await browser.close();

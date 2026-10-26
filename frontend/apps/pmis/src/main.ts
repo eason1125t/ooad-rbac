@@ -1,4 +1,5 @@
-/** 功能：PMIS独立构建入口；共享登录/请求处理，不提前实现工程审批。 */
+/** 功能：PMIS真实立项入口；共享登录守卫，项目预算和审批由PmisWorkspace维护。 */
 import { mount } from "@municipal/shell";
 import "@municipal/shell/styles.css";
-mount("pmis", import.meta.env.BASE_URL);
+import PmisWorkspace from "./PmisWorkspace.vue";
+mount("pmis", import.meta.env.BASE_URL, PmisWorkspace);

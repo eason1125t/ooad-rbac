@@ -36,6 +36,9 @@ jobs:
       - run: pnpm -C frontend run test:admin
         env:
           CHROME_PATH: /usr/bin/google-chrome
+      - run: pnpm -C frontend run test:business
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -1,4 +1,4 @@
-<!-- 功能：应用信息、注册权限只读目录、平台委派配置；业务管理员只读自身范围与可授予上限。 -->
+<!-- 功能：应用信息、资源目录维护及平台委派配置；目录表单由ResourceCatalog隔离，业务管理员只读。 -->
 <script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
 import { adminApi, type Schema } from "@municipal/api";
@@ -17,6 +17,7 @@ import EditorDialog from "./components/EditorDialog.vue";
 import PeopleScopeEditor from "./components/PeopleScopeEditor.vue";
 import ScopeEditor from "./components/ScopeEditor.vue";
 import PersonPicker from "./components/PersonPicker.vue";
+import ResourceCatalog from "./ResourceCatalog.vue";
 const c = useAdmin();
 useDirty(c.dirty);
 const { busy, error, notice, run } = useTask();
@@ -242,44 +243,7 @@ onMounted(load);
         </p>
         <button :disabled="busy" @click="load">刷新应用信息</button>
       </div>
-      <div v-else-if="tab === 'resources'">
-        <div class="section-heading">
-          <h2>已登记权限</h2>
-          <button :disabled="busy" @click="load">刷新权限目录</button>
-        </div>
-        <p class="muted">
-          当前目录由已登记接口提供，未启用或未实现的权限不能新授予。本轮目录只读。
-        </p>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>权限名称</th>
-                <th>权限编码</th>
-                <th>状态</th>
-                <th>实现状态</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="p in permissions" :key="p.id">
-                <td>{{ p.name }}</td>
-                <td>{{ p.code }}</td>
-                <td>{{ p.enabled ? "启用" : "停用" }}</td>
-                <td>
-                  {{
-                    p.implementationStatus === "IMPLEMENTED"
-                      ? "已实现"
-                      : "待实现"
-                  }}
-                </td>
-              </tr>
-              <tr v-if="!permissions.length">
-                <td colspan="4">当前应用暂无已登记权限。</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <div v-else-if="tab === 'resources'"><ResourceCatalog /></div>
       <div v-else>
         <template v-if="c.platform.value"
           ><div class="section-heading">

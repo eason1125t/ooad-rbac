@@ -1,7 +1,34 @@
 = 测试结果与验收记录
 :toc:
 
-== 干净检出与main/develop发布验证（2026-10-26）
+== RBAC0配置闭环与两业务第一阶段验收（2026-10-26）
+
+本轮在develop工作区实现资源目录、角色/员工授权及OA公文/PMIS立项。测试使用独立MySQL/Redis和合成数据；Windows为本轮实际浏览器验收平台。完整规格和检查矩阵见link:15-第一阶段开发规格与验收.adoc[15]。
+
+[cols="2,5",options="header"]
+|===
+|检查 |本轮实际结果
+|后端最新全量verify |116项，115通过、1原生MySQL可选跳过，0失败/错误；不是跳过容器测试
+|必需容器套件 |74项全部执行：原6+16+28，本轮资源/业务24
+|JaCoCo |行2871/3025=94.91%，分支1079/1415=76.25%；全部生产包行≥80%、分支≥70%，未降低门槛或排除核心
+|前端 |frozen-lockfile安装、唯一契约/生成类型、三端类型检查、构建与格式通过
+|管理浏览器回归 |原17组全部通过，含角色授权、委派、v2失权不级联及调岗
+|资源/两业务浏览器 |25组全部通过，页面异常0；含资源维护、页面配置角色/授予员工、OA/PMIS草稿/指定审批/驳回重提/撤回/终止、SELF/跨应用拒绝、同会话启停/撤角及首次强改密
+|资源移动保护 |专项及最新全量HTTP通过；不能移出停用目录绕过恢复预览，须先显式停用→移动→预览启用
+|迁移 |全新空库V1–V4与独立V3→V4升级通过，V1–V3校验和保留；30业务表+1历史表
+|本机服务/数据 |原开发库先私有备份，在独立容器恢复25表/V3成功，再原地升级V4；显式准备4个合成业务账号，重跑保持已有账号/授权
+|真实Vite入口 |15173同站点四个新账号登录、两业务草稿/待审批样本及指定人的真实待办通过，页面异常0；原6账号18访问矩阵及CSRF/会话链仍通过
+|Apifox MCP |私有8967444新增38接口/28模型，并回读96操作/95模型；认证、CSRF、权限元数据及请求/响应约束语义一致
+|说明/隐私 |00–15共16个编号文件，31个HTML页面及本地链接/图片/章节校验通过；新API清单和字典由唯一来源生成；不含秘密/原始Excel
+|===
+
+主要证据：reports/phase1-summary.json、phase1-final-backend-verify.log、phase1-final-ci-guard.log、phase1-frontend-verify-final.log、phase1-admin-browser.log、phase1-business-browser-release.log、phase1-resource-move-protection.log、phase1-live-ui.json、phase1-live-ui-final.json、phase1-live-login.log、phase1-live-demo-matrix.log、phase1-apifox-semantic-final.log、phase1-docs-render.log和phase1-source-review.json。JaCoCo在backend/target/site/jacoco；浏览器JSON及合成截图在reports/ui，不保存口令、Cookie或预览令牌。
+
+本轮先完成23项HTTP与24组浏览器，再补输入边界测试、首次强改密浏览器场景和资源移动保护；上表以最终116项后端、17+25组浏览器为准。移动保护在专项与最终全量HTTP验证，不谎称每个拒绝分支都由页面点击。原01中的88项是上一发布历史，不与本轮次数相加。
+
+本轮按用户授权从develop发布并合并到main；发布前再次检查契约/前端构建、测试报告、文档、已应用迁移及提交内容，具体提交和分支以Git记录为准。原远程c800fe8的Linux原生关闭点击失败按用户要求暂缓，不能标为已修复/CI全绿，也不把Windows通过冒充Linux结果。Excel在线导入、引用下组织移动完整分析、万级并发/30ms、正式恢复时长和教师模板仍未验收；独立小库恢复成功不等于生产恢复SLA达标。
+
+== 上一发布的干净检出与分支验证（历史快照，2026-10-26）
 
 通过完整演练的生产代码提交为3008fa1，后续发布补充文档记录及浏览器测试同步，不改业务实现。新目录由Git独立克隆，初始无.env、node_modules、backend/target和前端dist，重新按锁文件安装、构建、生成说明；不是从现有工作区复制依赖或构建产物。复用本机已有Java/Node/Python/Docker和下载缓存，不冒充新操作系统重装。
 

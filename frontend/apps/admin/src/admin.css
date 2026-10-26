@@ -235,6 +235,63 @@
 .object-detail {
   border-top: 3px solid var(--accent);
 }
+.catalog-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  border: 1px solid var(--line);
+  margin-top: 20px;
+}
+.catalog-tree {
+  padding: 16px;
+  background: #f5f9fb;
+  border-right: 1px solid var(--line);
+  max-height: 650px;
+  overflow-y: auto;
+}
+.catalog-tree > button {
+  display: block;
+  text-align: left;
+  width: 100%;
+  margin-bottom: 5px;
+}
+.catalog-tree > button[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: #e4f2f3;
+}
+.catalog-tree > button span {
+  font-size: 12px;
+  color: #596e7f;
+}
+.catalog-detail {
+  min-width: 0;
+  padding: 20px;
+}
+.catalog-detail > input {
+  width: 100%;
+  margin-bottom: 16px;
+}
+.resource-catalog textarea,
+.editor-dialog textarea {
+  width: 100%;
+  min-height: 100px;
+  font: inherit;
+  padding: 10px;
+  border: 1px solid #aebfcd;
+  border-radius: 4px;
+}
+.catalog-impact p {
+  line-height: 1.7;
+}
+@media (max-width: 950px) {
+  .catalog-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .catalog-tree {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    max-height: 230px;
+  }
+}
 .editor-dialog {
   margin: auto;
   width: min(850px, calc(100vw - 32px));

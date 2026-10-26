@@ -240,7 +240,7 @@ class IdentityAdministrationIntegrationTest {
                     "INSERT INTO id_organization(id,code,name,node_type) VALUES(100,'legacy-root','Legacy Root','HEADQUARTERS')");
             legacy.update(
                     "INSERT INTO id_organization(id,code,name,node_type,parent_id) VALUES(101,'legacy-dept','Legacy Dept','DEPARTMENT',100)");
-            var flyway = Flyway.configure().dataSource(source).load();
+            var flyway = Flyway.configure().dataSource(source).target("3").load();
             assertThat(flyway.migrate().migrationsExecuted).isEqualTo(2);
             flyway.validate();
             assertThat(flyway.migrate().migrationsExecuted).isZero();

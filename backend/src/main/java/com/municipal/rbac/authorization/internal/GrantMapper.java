@@ -10,7 +10,9 @@ import org.apache.ibatis.annotations.Select;
 
 @Mapper
 public interface GrantMapper {
-    String SOURCE =
+    String ACTIVE_RESOURCE =
+            "(p.resource_id IS NULL OR NOT EXISTS(SELECT 1 FROM auth_resource_path cr JOIN auth_resource ar ON ar.id=cr.ancestor_id WHERE cr.application_id=p.application_id AND cr.descendant_id=p.resource_id AND ar.enabled=FALSE))";
+    String SOURCE_JOINS =
             """
         FROM auth_user_role ur
         JOIN id_user u ON u.id=ur.user_id AND u.enabled=TRUE
@@ -19,11 +21,17 @@ public interface GrantMapper {
         JOIN auth_role_permission rp ON rp.role_id=r.id
         JOIN auth_permission p ON p.id=rp.permission_id AND p.enabled=TRUE AND p.implementation_status='IMPLEMENTED'
         JOIN auth_application a ON a.id=p.application_id AND a.enabled=TRUE
-        WHERE ur.user_id=#{subjectId} AND p.code LIKE CONCAT(a.code,':%')
+        """;
+    String SOURCE_CONDITIONS =
+            """
+        AND p.code LIKE CONCAT(a.code,':%')
         AND (r.kind='LEGACY' OR r.application_id=p.application_id)
         AND (e.id IS NULL OR (e.enabled=TRUE AND NOT EXISTS(SELECT 1 FROM id_organization_path z JOIN id_organization o ON o.id=z.ancestor_id WHERE z.descendant_id=e.organization_id AND o.enabled=FALSE)))
         AND (r.kind<>'SCOPED' OR r.personnel_all=TRUE OR EXISTS(SELECT 1 FROM auth_role_organization n JOIN id_organization_path z ON z.ancestor_id=n.organization_id AND z.descendant_id=e.organization_id AND (n.include_descendants=TRUE OR z.depth=0) WHERE n.role_id=r.id))
-        """;
+        """
+                    + " AND "
+                    + ACTIVE_RESOURCE;
+    String SOURCE = SOURCE_JOINS + " WHERE ur.user_id=#{subjectId} " + SOURCE_CONDITIONS;
 
     @Select(
             """

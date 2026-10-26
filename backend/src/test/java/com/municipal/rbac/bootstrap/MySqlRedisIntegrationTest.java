@@ -158,7 +158,7 @@ class MySqlRedisIntegrationTest {
                         jdbc.queryForObject(
                                 "SELECT COUNT(*) FROM flyway_schema_history WHERE success=TRUE",
                                 Integer.class))
-                .isEqualTo(3);
+                .isEqualTo(4);
         assertThatThrownBy(
                         () ->
                                 jdbc.update(
